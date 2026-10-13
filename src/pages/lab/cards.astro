@@ -4,9 +4,14 @@ import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { execSync } from 'node:child_process';
+import pkg from '../../../package.json';
+
+let build = 'dev';
+try { build = execSync('git rev-parse --short HEAD').toString().trim(); } catch {}
 
 const SLOTS = 5;
-const TIERS = ['C', 'U', 'R', 'SR', 'UR'] as const;
+const TIERS = ['C', 'R', 'SR', 'SSR'] as const;
 type Tier = (typeof TIERS)[number];
 const hash = (s: string) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
 
@@ -18,23 +23,23 @@ const cardsAll = posts.map((p) => {
 	const code = (body.match(/```/g) ?? []).length / 2;
 	// 등급 점수: 분량 + 이미지 + 코드 블록. frontmatter grade가 있으면 그걸 우선.
 	const score = chars / 500 + images * 1.2 + code * 0.8;
-	const auto: Tier = score >= 10.5 ? 'UR' : score >= 8 ? 'SR' : score >= 6.5 ? 'R' : score >= 4.5 ? 'U' : 'C';
+	const auto: Tier = score >= 10.5 ? 'SSR' : score >= 8 ? 'SR' : score >= 5.5 ? 'R' : 'C';
 	const tier: Tier = p.data.grade ?? auto;
 	return {
 		id: p.id, title: p.data.title, href: `/blog/${p.id}/`, category: p.data.category,
 		date: p.data.pubDate.toISOString().slice(0, 10).replaceAll('-', '.'),
-		chars, min: Math.max(1, Math.round(chars / 500)), tier, seed: hash(p.id) % 1000, hue: hash(p.data.title) % 360, blank: false,
+		chars, min: Math.max(1, Math.round(chars / 500)), tier, seed: hash(p.id) % 1000, hue: hash(p.data.title) % 360, no: '0x' + hash(p.id).toString(16).slice(0, 4), blank: false,
 	};
 });
 const cats = [...new Set(cardsAll.map((c) => c.category))];
 const packs = cats.map((cat, pi) => {
 	const own = cardsAll.filter((c) => c.category === cat).slice(0, SLOTS);
-	const blanks = Array.from({ length: SLOTS - own.length }, (_, i) => ({ id: `blank-${pi}-${i}`, title: '아직 안 쓴 글', href: '', category: cat, date: '----.--.--', chars: 0, min: 0, tier: 'C' as Tier, seed: (pi * 97 + i * 13) % 1000, hue: 0, blank: true }));
+	const blanks = Array.from({ length: SLOTS - own.length }, (_, i) => ({ id: `blank-${pi}-${i}`, title: '아직 안 쓴 글', href: '', category: cat, date: '----.--.--', chars: 0, min: 0, tier: 'C' as Tier, seed: (pi * 97 + i * 13) % 1000, hue: 0, no: '0x????', blank: true }));
 	// 낮은 등급이 앞, 높은 등급이 맨 뒤
 	const cards = [...blanks, ...own].sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier));
 	return { cat, hue: hash(cat) % 360, cards, top: cards[cards.length - 1].tier, count: own.length };
 });
-const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', SR: 'SUPER RARE', UR: 'ULTRA RARE' };
+const tierName: Record<Tier, string> = { C: 'COMMON', R: 'RARE', SR: 'SUPER RARE', SSR: 'SPECIAL SUPER RARE' };
 ---
 
 <!doctype html>
@@ -43,13 +48,12 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 		<BaseHead title={`cards · ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
 		<style is:global>
 			body { background: #0f1115; color: #e5e7eb; }
-			body.shake { animation: shake 0.45s; }
-			@keyframes shake { 10%,90% { translate: -2px 0; } 20%,80% { translate: 4px 0; } 30%,50%,70% { translate: -6px 2px; } 40%,60% { translate: 6px -2px; } }
 			header .brand, header .links a { color: #e5e7eb !important; }
 			footer, footer a { color: #6b7280 !important; }
 			main { max-width: 1100px; padding-bottom: 2rem; }
 			.hint { text-align: center; color: #9ca3af; font-size: 0.9rem; min-height: 1.4em; }
 			.col { text-align: center; font-family: var(--mono); font-size: 0.8rem; color: #6b7280; margin-top: 1rem; }
+			.build { text-align: center; font-family: var(--mono); font-size: 0.7rem; color: #4b5563; margin-top: 0.6rem; }
 			.col button { font: inherit; color: inherit; background: none; border: 1px solid #374151; border-radius: 4px; padding: 0.1em 0.6em; cursor: pointer; margin-left: 0.8em; }
 
 			/* 선반 */
@@ -81,10 +85,10 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 			.deck .c:nth-child(1) { translate: 8px 8px; } .deck .c:nth-child(2) { translate: 6px 6px; } .deck .c:nth-child(3) { translate: 4px 4px; } .deck .c:nth-child(4) { translate: 2px 2px; }
 			.deck .c.top { cursor: pointer; }
 			.deck .c.top:hover { translate: 0 -6px; }
-			.deck .c.peek { animation: peek 1.6s ease-in-out forwards; }
-			@keyframes peek { 0% { translate: 0 0; } 60% { translate: 0 -60px; rotate: -4deg; } 100% { translate: 0 -70px; rotate: -5deg; } }
-			.deck .c.peek .face.back::after { animation: charge 1.6s ease-in forwards; }
-			@keyframes charge { to { box-shadow: 0 0 60px 20px rgba(255,220,120,0.55), inset 0 0 0 2px rgba(255,220,120,0.8); } }
+			.deck .c.peek { animation: peek 1.2s ease-in-out forwards; }
+			@keyframes peek { 0% { translate: 0 0; } 60% { translate: 0 -40px; rotate: -2deg; } 100% { translate: 0 -46px; rotate: -3deg; } }
+			.deck .c.peek .face.back::after { animation: charge 1.2s ease-in forwards; }
+			@keyframes charge { to { box-shadow: 0 0 36px 10px rgba(255,220,120,0.35), inset 0 0 0 1px rgba(255,220,120,0.7); } }
 			.row { display: flex; gap: 0.9rem; flex-wrap: wrap; justify-content: center; min-height: 100px; padding: 0.5rem; }
 			.row .card { width: 150px; }
 			@media (max-width: 720px) { .row .card { width: 120px; } }
@@ -105,29 +109,29 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 			.front .t { position: absolute; left: 6%; right: 6%; top: 54%; font-weight: 800; font-size: 6.6cqw; line-height: 1.3; letter-spacing: -0.02em; }
 			.front .m { position: absolute; left: 6%; right: 6%; bottom: 11%; font-family: var(--mono); font-size: 4.2cqw; color: #9ca3af; display: flex; justify-content: space-between; white-space: nowrap; }
 			.front .r { position: absolute; left: 6%; bottom: 4%; font-family: var(--mono); font-size: 4.2cqw; letter-spacing: 0.12em; color: #6b7280; white-space: nowrap; }
+			.front .no { position: absolute; left: 8%; top: 6%; font-family: var(--mono); font-size: 4cqw; color: rgba(255,255,255,0.6); background: rgba(0,0,0,0.45); padding: 0.15em 0.5em; border-radius: 999px; }
 			.front .n { position: absolute; right: 8%; top: 6%; font-family: var(--mono); font-size: 4cqw; color: rgba(255,255,255,0.75); background: rgba(0,0,0,0.45); padding: 0.15em 0.5em; border-radius: 999px; }
-			.card.U .front .r { color: #a7f3d0; } .card.R .front .r { color: #93c5fd; } .card.SR .front .r { color: #fbbf24; } .card.UR .front .r { color: #f0abfc; }
+			.card.R .front .r { color: #93c5fd; } .card.SR .front .r { color: #fbbf24; } .card.SSR .front .r { color: #f0abfc; }
 			.card.R .front { box-shadow: inset 0 0 0 1px #3b82f6; }
 			.card.SR .front { box-shadow: inset 0 0 0 2px #b4891e; }
-			.card.UR .front::before { content: ''; position: absolute; inset: 0; padding: 3px; border-radius: 12px; background: conic-gradient(from var(--a, 0deg), #f0abfc, #93c5fd, #a7f3d0, #fde68a, #f0abfc); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; -webkit-mask-composite: xor; animation: spin 3s linear infinite; pointer-events: none; z-index: 2; }
+			.card.SSR .front::before { content: ''; position: absolute; inset: 0; padding: 3px; border-radius: 12px; background: conic-gradient(from var(--a, 0deg), #f0abfc, #93c5fd, #a7f3d0, #fde68a, #f0abfc); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; -webkit-mask-composite: xor; animation: spin 6s linear infinite; pointer-events: none; z-index: 2; }
 			@property --a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 			@keyframes spin { to { --a: 360deg; } }
 			.shine, .glare { position: absolute; inset: 0; pointer-events: none; border-radius: 12px; }
 			.shine { background: linear-gradient(115deg, transparent 20%, rgba(255,0,200,0.6) 36%, rgba(0,255,255,0.6) 44%, rgba(255,255,0,0.6) 52%, rgba(0,255,120,0.55) 60%, transparent 76%); background-size: 300% 300%; background-position: var(--px) var(--py); mix-blend-mode: color-dodge; opacity: calc(var(--o) * 0.6); filter: brightness(0.9) contrast(1.4); }
 			.card.C .shine { display: none; }
-			.card.U .shine { background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 66%); mix-blend-mode: screen; }
-			.card.SR .shine::after, .card.UR .shine::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 9 -4'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>"); background-position: calc(var(--px) * -1) calc(var(--py) * -1); mix-blend-mode: overlay; }
-			.card.UR .shine { opacity: calc(var(--o) * 0.6 + 0.25); }
+			.card.SR .shine::after, .card.SSR .shine::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 9 -4'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>"); background-position: calc(var(--px) * -1) calc(var(--py) * -1); mix-blend-mode: overlay; }
+			.card.SSR .shine { opacity: calc(var(--o) * 0.6 + 0.15); }
 			.glare { background: radial-gradient(circle at var(--px) var(--py), rgba(255,255,255,0.55), rgba(255,255,255,0.05) 40%, transparent 70%); mix-blend-mode: overlay; opacity: calc(var(--o) * 0.8); }
 
 			/* 연출 */
 			.fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
-			.flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(255,255,255,0.95), rgba(255,220,150,0.5) 30%, transparent 65%); animation: flash 0.7s ease-out forwards; }
+			.flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(255,255,255,0.45), rgba(255,220,150,0.2) 30%, transparent 60%); animation: flash 0.5s ease-out forwards; }
 			@keyframes flash { to { opacity: 0; } }
-			.spark { position: absolute; left: 50%; top: 45%; width: 6px; height: 6px; border-radius: 50%; background: var(--c); animation: spark 1s cubic-bezier(.1,.8,.3,1) forwards; }
+			.spark { position: absolute; left: 50%; top: 45%; width: 6px; height: 6px; border-radius: 50%; background: var(--c); animation: spark 0.9s cubic-bezier(.1,.8,.3,1) forwards; }
 			@keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
-			.banner { position: absolute; left: 0; right: 0; top: 18%; text-align: center; font-weight: 900; font-size: clamp(2rem, 8vw, 5rem); letter-spacing: -0.04em; color: #fff; text-shadow: 0 0 30px rgba(255,220,120,0.9); animation: banner 1.4s ease-out forwards; }
-			@keyframes banner { 0% { transform: scale(0.4); opacity: 0; } 20% { transform: scale(1.1); opacity: 1; } 70% { opacity: 1; } 100% { transform: scale(1.2) translateY(-20px); opacity: 0; } }
+			.banner { position: absolute; left: 0; right: 0; top: 22%; text-align: center; font-family: var(--mono); font-weight: 700; font-size: clamp(1rem, 2.6vw, 1.5rem); letter-spacing: 0.3em; color: #fde68a; animation: banner 1.3s ease-out forwards; }
+			@keyframes banner { 0% { transform: translateY(8px); opacity: 0; } 25% { transform: none; opacity: 1; } 70% { opacity: 1; } 100% { transform: translateY(-10px); opacity: 0; } }
 		</style>
 	</head>
 	<body>
@@ -148,6 +152,7 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 				<div class="row" id="row"></div>
 			</div>
 			<div class="col"><span id="colcount"></span><button id="reset" hidden>선반으로</button></div>
+			<div class="build">v{pkg.version} · build {build} · {posts.length} posts · <kbd>space</kbd> 넘기기 · <kbd>esc</kbd> 선반</div>
 			<template id="tpl">
 				{packs.flatMap((p) => p.cards).map((c) => (
 					<div class={`card ${c.tier}${c.blank ? ' blank' : ''}`} data-id={c.id} data-href={c.href} data-tier={c.tier} style={`--hue:${c.hue}`}>
@@ -160,6 +165,7 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 								<div class="t">{c.title}</div>
 								<div class="m"><span>{c.date}</span><span>{c.blank ? '' : `${c.min}분 · ${c.chars.toLocaleString()}자`}</span></div>
 								<div class="r">{c.tier} · {tierName[c.tier]}</div>
+								<div class="no">{c.no}</div>
 								<div class="n">{c.category}</div>
 								<div class="shine"></div><div class="glare"></div>
 							</div>
@@ -180,7 +186,8 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 			const total = [...tpl.querySelectorAll('.card:not(.blank)')].length;
 			const count = () => { $('colcount').textContent = `컬렉션 ${got.size} / ${total}`; };
 			count();
-			const RANK = { C: 0, U: 1, R: 2, SR: 3, UR: 4 };
+			const RANK = { C: 0, R: 1, SR: 2, SSR: 3 };
+			console.log('%ceasyho.cards%c ' + packs.length + ' packs · ' + total + ' cards · 뜯은 카드는 localStorage.getItem("easyho.cards")', 'font-weight:bold;color:#fde68a', '');
 
 			// 소리: 파일 없이 합성
 			let ac;
@@ -191,9 +198,9 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 				if (kind === 'tear') { const b = ac.createBuffer(1, ac.sampleRate * 0.4, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = ac.createBufferSource(), v = ac.createGain(), f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2500; s.buffer = b; v.gain.value = 0.25; s.connect(f).connect(v).connect(ac.destination); s.start(t); }
 				if (kind === 'flip') tone(900, t, 0.08, 'triangle', 0.05);
 				if (kind === 'rare') [523, 659, 784].forEach((f, i) => tone(f, t + i * 0.08, 0.5, 'triangle'));
-				if (kind === 'sr') [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, t + i * 0.09, 0.9, 'triangle', 0.1));
-				if (kind === 'ur') { [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => tone(f, t + i * 0.07, 1.4, 'triangle', 0.1)); tone(130, t, 1.6, 'sawtooth', 0.06); }
-				if (kind === 'charge') { for (let i = 0; i < 12; i++) tone(300 + i * 90, t + i * 0.12, 0.2, 'sine', 0.04); }
+				if (kind === 'sr') [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.09, 0.7, 'triangle', 0.06));
+				if (kind === 'ssr') [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, t + i * 0.08, 0.9, 'triangle', 0.06));
+				if (kind === 'charge') { for (let i = 0; i < 8; i++) tone(300 + i * 90, t + i * 0.13, 0.18, 'sine', 0.025); }
 			}
 
 			function tilt(c, nx, ny, on) {
@@ -207,14 +214,13 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 				c.addEventListener('click', () => { if (c.classList.contains('flip') && c.dataset.href) location.href = c.dataset.href; });
 			}
 			function burst(tier) {
-				const colors = tier === 'UR' ? ['#f0abfc', '#93c5fd', '#a7f3d0', '#fde68a', '#fff'] : ['#fde68a', '#fbbf24', '#fff'];
+				const colors = tier === 'SSR' ? ['#f0abfc', '#93c5fd', '#a7f3d0', '#fde68a'] : ['#fde68a', '#fbbf24'];
 				fx.innerHTML = '';
 				const fl = document.createElement('div'); fl.className = 'flash'; fx.appendChild(fl);
-				const n = tier === 'UR' ? 70 : 40;
-				for (let i = 0; i < n; i++) { const s = document.createElement('i'); s.className = 'spark'; const a = Math.random() * Math.PI * 2, d = 120 + Math.random() * (tier === 'UR' ? 520 : 360); s.style.setProperty('--dx', `${Math.cos(a) * d}px`); s.style.setProperty('--dy', `${Math.sin(a) * d}px`); s.style.setProperty('--c', colors[i % colors.length]); s.style.width = s.style.height = `${4 + Math.random() * 8}px`; fx.appendChild(s); }
-				const b = document.createElement('div'); b.className = 'banner'; b.textContent = tier === 'UR' ? 'ULTRA RARE!!' : 'SUPER RARE!'; fx.appendChild(b);
-				document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 500);
-				setTimeout(() => (fx.innerHTML = ''), 1600);
+				const n = tier === 'SSR' ? 28 : 16;
+				for (let i = 0; i < n; i++) { const s = document.createElement('i'); s.className = 'spark'; const a = Math.random() * Math.PI * 2, d = 90 + Math.random() * (tier === 'SSR' ? 260 : 180); s.style.setProperty('--dx', `${Math.cos(a) * d}px`); s.style.setProperty('--dy', `${Math.sin(a) * d}px`); s.style.setProperty('--c', colors[i % colors.length]); s.style.width = s.style.height = `${3 + Math.random() * 4}px`; fx.appendChild(s); }
+				const b = document.createElement('div'); b.className = 'banner'; b.textContent = tier === 'SSR' ? 'SSR' : 'SR'; fx.appendChild(b);
+				setTimeout(() => (fx.innerHTML = ''), 1400);
 			}
 
 			let cards = [], busy = false;
@@ -250,15 +256,19 @@ const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', 
 					c.classList.remove('top', 'peek', 'c'); c.style.translate = '';
 					row.appendChild(c); c.classList.add('flip'); wire(c);
 					if (c.dataset.href) { got.add(c.dataset.id); localStorage.setItem(KEY, JSON.stringify([...got])); count(); }
-					if (RANK[tier] >= 3) { setTimeout(() => { burst(tier); sfx(tier.toLowerCase()); }, 350); }
+					if (RANK[tier] >= 2) { setTimeout(() => { burst(tier); sfx(tier.toLowerCase()); }, 350); }
 					else if (tier === 'R') sfx('rare'); else sfx('flip');
-					setTimeout(() => { busy = false; arm(); }, RANK[tier] >= 3 ? 1500 : 450);
+					setTimeout(() => { busy = false; arm(); }, RANK[tier] >= 2 ? 1200 : 450);
 				};
-				if (last && RANK[tier] >= 3) { c.classList.add('peek'); sfx('charge'); setTimeout(finish, 1700); }
+				if (last && RANK[tier] >= 2) { c.classList.add('peek'); sfx('charge'); setTimeout(finish, 1300); }
 				else finish();
 			}
 			document.querySelectorAll('.pack').forEach((p) => p.addEventListener('click', () => openPack(+p.dataset.i)));
 			reset.addEventListener('click', () => { stage.classList.remove('on'); shelf.classList.remove('off'); reset.hidden = true; hint.textContent = '팩을 골라서 뜯기'; });
+			addEventListener('keydown', (e) => {
+				if (e.key === 'Escape' && !reset.hidden) reset.click();
+				if ((e.key === ' ' || e.key === 'Enter') && stage.classList.contains('on')) { e.preventDefault(); deck.querySelector('.top')?.click(); }
+			});
 			// 폰 기울기
 			function gyro(e) { const nx = Math.max(-1, Math.min(1, (e.gamma ?? 0) / 30)), ny = Math.max(-1, Math.min(1, ((e.beta ?? 45) - 45) / 30)); row.querySelectorAll('.card').forEach((c) => tilt(c, nx, ny, true)); }
 			if (matchMedia('(pointer: coarse)').matches && window.DeviceOrientationEvent) {

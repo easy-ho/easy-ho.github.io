@@ -40,4 +40,4 @@ Consult these guides before working on related tasks:
 - 디자인: 미니멀 텍스트 중심. 본문 폭 660px, Pretendard, 장식 없음. 카드·히어로 이미지·그라데이션 추가 금지.
 - 커밋은 이 저장소의 로컬 git 설정(EasyHo / dev.easyho@gmail.com)으로만 한다. 전역 설정을 바꾸지 않는다.
 
-- 포스트 frontmatter에 `category`(카드팩 단위)를 넣는다. `grade`(C/U/R/SR/UR)는 생략하면 자동 산정.
+- 포스트 frontmatter에 `category`(카드팩 단위)를 넣는다. `grade`(C/R/SR/SSR)는 생략하면 자동 산정.
