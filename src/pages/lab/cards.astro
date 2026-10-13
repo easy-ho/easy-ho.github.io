@@ -1,0 +1,152 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+
+const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const hash = (s: string) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+const cards = posts.map((p) => {
+	const chars = (p.body ?? '').replace(/<[^>]+>/g, '').replace(/\s+/g, '').length;
+	const rarity = chars > 2600 ? 'legendary' : chars > 2200 ? 'rare' : 'common';
+	return {
+		id: p.id, title: p.data.title, desc: p.data.description, href: `/blog/${p.id}/`,
+		date: p.data.pubDate.toISOString().slice(0, 10).replaceAll('-', '.'),
+		chars, min: Math.max(1, Math.round(chars / 500)), rarity, seed: hash(p.id) % 1000, hue: hash(p.data.title) % 360,
+	};
+});
+const label = { common: 'COMMON', rare: 'RARE', legendary: 'LEGENDARY' } as const;
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`cards · ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<style is:global>
+			body { background: #0f1115; color: #e5e7eb; }
+			header .brand, header .links a { color: #e5e7eb !important; }
+			footer, footer a { color: #6b7280 !important; }
+			main { max-width: 1100px; padding-bottom: 2rem; }
+			.stage { min-height: max(70vh, 440px); display: grid; place-items: center; perspective: 1400px; position: relative; }
+			.hint { text-align: center; color: #9ca3af; font-size: 0.9rem; margin-top: -1rem; }
+			.col { text-align: center; font-family: var(--mono); font-size: 0.8rem; color: #6b7280; margin-top: 1.2rem; }
+			.col button { font: inherit; color: inherit; background: none; border: 1px solid #374151; border-radius: 4px; padding: 0.1em 0.6em; cursor: pointer; margin-left: 0.8em; }
+
+			/* 팩 */
+			.pack { width: 220px; height: 330px; position: relative; cursor: pointer; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(.2,.8,.2,1); animation: float 3.2s ease-in-out infinite; }
+			.pack:hover { transform: rotateY(-8deg) rotateX(6deg) scale(1.03); }
+			@keyframes float { 50% { translate: 0 -8px; } }
+			.pack .body { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(160deg, #1f2937, #0b0d12 60%, #1f2937); box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.08); overflow: hidden; }
+			.pack .body::before { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.18) 45%, rgba(120,200,255,0.25) 50%, rgba(255,120,220,0.2) 55%, transparent 70%); background-size: 250% 250%; animation: sweep 3.6s linear infinite; mix-blend-mode: screen; }
+			@keyframes sweep { to { background-position: 250% 0; } }
+			.pack .name { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em; }
+			.pack .sub { position: absolute; left: 0; right: 0; top: 58%; text-align: center; font-family: var(--mono); font-size: 0.72rem; color: #9ca3af; }
+			.pack .tear { position: absolute; left: 0; right: 0; top: 0; height: 56px; border-radius: 10px 10px 0 0; background: linear-gradient(160deg, #273041, #10131a); border-bottom: 2px dashed rgba(255,255,255,0.15); transition: transform 0.5s ease-in, opacity 0.5s; }
+			.pack .tear span { position: absolute; left: 14px; top: 18px; font-family: var(--mono); font-size: 0.7rem; color: #9ca3af; }
+			.pack.open { animation: none; pointer-events: none; }
+			.pack.open .tear { transform: translateY(-80px) rotate(-6deg); opacity: 0; }
+			.pack.open .body { transition: opacity 0.4s 0.45s, transform 0.4s 0.45s; opacity: 0; transform: translateY(40px) scale(0.9); }
+
+			/* 카드 */
+			.hand { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 1.2rem; flex-wrap: wrap; padding: 1rem; pointer-events: none; }
+			.card { --px: 50%; --py: 50%; --rx: 0deg; --ry: 0deg; --o: 0; width: 200px; aspect-ratio: 63/88; position: relative; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 0.12s; opacity: 0; translate: 0 60px; pointer-events: auto; cursor: pointer; }
+			.card.in { animation: deal 0.7s cubic-bezier(.2,.8,.2,1) forwards; }
+			@keyframes deal { from { opacity: 0; translate: 0 80px; } to { opacity: 1; translate: 0 0; } }
+			.card .face { position: absolute; inset: 0; border-radius: 12px; backface-visibility: hidden; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.55); }
+			.card .back { background: repeating-linear-gradient(45deg, #171b24 0 6px, #11141b 6px 12px); transform: rotateY(180deg); display: grid; place-items: center; font-weight: 800; color: #374151; letter-spacing: 0.1em; }
+			.card .back::after { content: ''; position: absolute; inset: 10px; border: 1px solid #2a3140; border-radius: 8px; }
+			.card .inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(.2,.8,.2,1); transform: rotateY(180deg); }
+			.card.flip .inner { transform: rotateY(0deg); }
+			.front { background: #0b0d12; color: #f3f4f6; }
+			.art { position: absolute; left: 10px; right: 10px; top: 10px; height: 46%; border-radius: 8px; overflow: hidden; background: hsl(var(--hue) 40% 18%); }
+			.art svg { width: 100%; height: 100%; display: block; }
+			.front .t { position: absolute; left: 12px; right: 12px; top: 54%; font-weight: 800; font-size: 0.95rem; line-height: 1.3; letter-spacing: -0.02em; }
+			.front .m { position: absolute; left: 12px; right: 12px; bottom: 30px; font-family: var(--mono); font-size: 0.62rem; color: #9ca3af; display: flex; justify-content: space-between; }
+			.front .r { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em; color: #6b7280; }
+			.front .n { position: absolute; right: 12px; bottom: 10px; font-family: var(--mono); font-size: 0.6rem; color: #4b5563; }
+			.card.rare .front .r { color: #93c5fd; } .card.legendary .front .r { color: #fbbf24; }
+			.card.legendary .front { box-shadow: inset 0 0 0 2px #b4891e; }
+			.card.rare .front { box-shadow: inset 0 0 0 1px #3b82f6; }
+			/* 홀로 포일 */
+			.shine, .glare { position: absolute; inset: 0; pointer-events: none; border-radius: 12px; }
+			.shine { background: linear-gradient(115deg, transparent 20%, rgba(255,0,200,0.55) 36%, rgba(0,255,255,0.55) 44%, rgba(255,255,0,0.55) 52%, rgba(0,255,120,0.5) 60%, transparent 76%); background-size: 300% 300%; background-position: var(--px) var(--py); mix-blend-mode: color-dodge; opacity: calc(var(--o) * 0.55); filter: brightness(0.9) contrast(1.4); }
+			.card.common .shine { background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 66%); mix-blend-mode: screen; }
+			.card.legendary .shine::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 9 -4'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>"); background-position: calc(var(--px) * -1) calc(var(--py) * -1); mix-blend-mode: overlay; }
+			.glare { background: radial-gradient(circle at var(--px) var(--py), rgba(255,255,255,0.55), rgba(255,255,255,0.05) 40%, transparent 70%); mix-blend-mode: overlay; opacity: calc(var(--o) * 0.8); }
+			@media (max-width: 720px) { .card { width: 150px; } .hand { gap: 0.6rem; } }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="stage" id="stage">
+				<div class="pack" id="pack">
+					<div class="body"><div class="name">easyho.log</div><div class="sub">BOOSTER · {cards.length} CARDS</div></div>
+					<div class="tear"><span>TEAR HERE ✂</span></div>
+				</div>
+				<div class="hand" id="hand">
+					{cards.map((c, i) => (
+						<div class={`card ${c.rarity}`} data-i={i} data-id={c.id} data-href={c.href} style={`--hue:${c.hue}`}>
+							<div class="inner">
+								<div class="face front">
+									<div class="art"><svg viewBox="0 0 200 92" preserveAspectRatio="none">
+										<filter id={`f${i}`}><feTurbulence type="fractalNoise" baseFrequency="0.007 0.018" numOctaves="2" seed={c.seed} /><feColorMatrix values={`0 0 0 0 ${(0.3 + (c.hue % 7) / 10).toFixed(2)}  0 0 0 0 ${(0.4 + (c.hue % 5) / 10).toFixed(2)}  0 0 0 0 0.95  0 0 0 1.6 -0.3`} /><feComponentTransfer><feFuncA type="discrete" tableValues="0 .3 .6 1" /></feComponentTransfer></filter>
+										<rect width="200" height="92" filter={`url(#f${i})`} />
+									</svg></div>
+									<div class="t">{c.title}</div>
+									<div class="m"><span>{c.date}</span><span>{c.min}분 · {c.chars.toLocaleString()}자</span></div>
+									<div class="r">{label[c.rarity]}</div>
+									<div class="n">No.{String(cards.length - i).padStart(3, '0')}</div>
+									<div class="shine"></div><div class="glare"></div>
+								</div>
+								<div class="face back">easyho</div>
+							</div>
+						</div>
+					))}
+				</div>
+			</div>
+			<p class="hint" id="hint">팩을 눌러서 뜯기</p>
+			<div class="col"><span id="colcount"></span><button id="reset">다시 뜯기</button></div>
+		</main>
+		<Footer />
+		<script>
+			const pack = document.getElementById('pack')!, hand = document.getElementById('hand')!, hint = document.getElementById('hint')!;
+			const cards = [...document.querySelectorAll<HTMLElement>('.card')];
+			const KEY = 'easyho.cards';
+			const got = new Set<string>(JSON.parse(localStorage.getItem(KEY) || '[]'));
+			const count = () => { document.getElementById('colcount')!.textContent = `컬렉션 ${got.size} / ${cards.length}`; };
+			count();
+			let opened = false;
+			function open() {
+				if (opened) return; opened = true;
+				pack.classList.add('open');
+				hint.textContent = '카드를 누르면 글이 열린다';
+				cards.forEach((c, i) => {
+					setTimeout(() => c.classList.add('in'), 500 + i * 220);
+					setTimeout(() => { c.classList.add('flip'); got.add(c.dataset.id!); localStorage.setItem(KEY, JSON.stringify([...got])); count(); }, 1100 + i * 320);
+				});
+			}
+			pack.addEventListener('click', open);
+			document.getElementById('reset')!.addEventListener('click', () => { opened = false; pack.classList.remove('open'); cards.forEach((c) => c.classList.remove('in', 'flip')); hint.textContent = '팩을 눌러서 뜯기'; });
+			// 기울임 + 포일 위치
+			function tilt(c: HTMLElement, nx: number, ny: number, on: boolean) {
+				c.style.setProperty('--rx', `${(-ny * 14).toFixed(2)}deg`); c.style.setProperty('--ry', `${(nx * 16).toFixed(2)}deg`);
+				c.style.setProperty('--px', `${(50 + nx * 50).toFixed(1)}%`); c.style.setProperty('--py', `${(50 + ny * 50).toFixed(1)}%`);
+				c.style.setProperty('--o', on ? '1' : '0');
+			}
+			cards.forEach((c) => {
+				c.addEventListener('pointermove', (e) => { const r = c.getBoundingClientRect(); tilt(c, ((e.clientX - r.left) / r.width - 0.5) * 2, ((e.clientY - r.top) / r.height - 0.5) * 2, true); });
+				c.addEventListener('pointerleave', () => tilt(c, 0, 0, false));
+				c.addEventListener('click', () => { if (c.classList.contains('flip')) location.href = c.dataset.href!; });
+			});
+			// 폰: 기울기 센서
+			function gyro(e: DeviceOrientationEvent) { const nx = Math.max(-1, Math.min(1, (e.gamma ?? 0) / 30)), ny = Math.max(-1, Math.min(1, ((e.beta ?? 45) - 45) / 30)); cards.forEach((c) => tilt(c, nx, ny, true)); }
+			if (matchMedia('(pointer: coarse)').matches && 'DeviceOrientationEvent' in window) {
+				const D = DeviceOrientationEvent as any;
+				if (typeof D.requestPermission === 'function') pack.addEventListener('click', () => D.requestPermission().then((s: string) => s === 'granted' && addEventListener('deviceorientation', gyro)), { once: true });
+				else addEventListener('deviceorientation', gyro);
+			}
+		</script>
+	</body>
+</html>

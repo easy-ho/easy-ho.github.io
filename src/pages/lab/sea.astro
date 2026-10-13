@@ -1,0 +1,190 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+
+const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const fmt = (d: Date) => d.toISOString().slice(0, 10).replaceAll('-', '.');
+// 섬: 최신 글이 가까운 바다에, 과거로 갈수록 멀리. 나선 배치.
+const isles = posts.map((p, i) => {
+	const chars = (p.body ?? '').replace(/<[^>]+>/g, '').length;
+	const a = 0.9 + i * 2.1, r = 16 + i * 9;
+	return { x: Math.cos(a) * r, y: Math.sin(a) * r, r: 2.6 + Math.min(3, chars / 2600), seed: (i * 37) % 11, title: p.data.title, date: fmt(p.data.pubDate), href: `/blog/${p.id}/` };
+});
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`sea · ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<style is:global>
+			html, body { height: 100%; overflow: hidden; background: #cfe3ea; }
+			#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+			.hud { position: fixed; inset: 0; pointer-events: none; color: #10303a; }
+			.hud.night { color: #e5eef2; }
+			.hud .top { position: absolute; top: calc(1.2rem + env(safe-area-inset-top, 0px)); left: 1.25rem; right: 1.25rem; display: flex; justify-content: space-between; align-items: baseline; pointer-events: auto; }
+			.hud .brand { font-weight: 700; text-decoration: none; font-size: 1.05rem; color: inherit; }
+			.hud .links { display: flex; gap: 1.2em; font-size: 0.95rem; } .hud .links a { text-decoration: none; color: inherit; opacity: 0.7; }
+			.intro { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; transition: opacity 0.5s; }
+			.intro h1 { font-size: clamp(2.4rem, 7vw, 4rem); letter-spacing: -0.03em; margin: 0 0 0.2em; font-weight: 800; }
+			.intro p { margin: 0; opacity: 0.75; }
+			.intro .go { margin-top: 2em; font-family: var(--mono); font-size: 0.85rem; opacity: 0.8; animation: pulse 1.6s ease-in-out infinite; }
+			@keyframes pulse { 50% { opacity: 0.3; } }
+			.intro.off { opacity: 0; }
+			.near { position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity 0.3s; pointer-events: auto; }
+			.near.on { opacity: 1; }
+			.near .t { display: block; font-size: clamp(1.2rem, 3.4vw, 1.8rem); font-weight: 800; letter-spacing: -0.02em; text-decoration: none; color: inherit; }
+			.near .d { font-family: var(--mono); font-size: 0.85rem; opacity: 0.7; margin-top: 0.3em; }
+			.near .b { display: inline-block; margin-top: 0.9em; font-family: var(--mono); font-size: 0.82rem; padding: 0.35em 1em; border: 1px solid currentColor; border-radius: 999px; text-decoration: none; color: inherit; }
+			.help { position: absolute; left: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.6; }
+			.stat { position: absolute; right: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.6; text-align: right; }
+			.fallback { max-width: 660px; margin: 4rem auto; padding: 0 1.25rem; display: none; }
+		</style>
+	</head>
+	<body>
+		<canvas id="gl"></canvas>
+		<div class="hud" id="hud">
+			<div class="top"><a class="brand" href="/">{SITE_TITLE}</a><div class="links"><a href="/blog">글</a><a href="/about">소개</a></div></div>
+			<div class="intro" id="intro"><div><h1>easyho.log</h1><p>글은 섬이다. 바다를 눌러 항해하고, 섬에 닿으면 읽는다.</p><div class="go">바다를 눌러 출항</div></div></div>
+			<div class="near" id="near"><a class="t" id="nt" href="#"></a><div class="d" id="nd"></div><a class="b" id="nb" href="#">상륙해서 읽기</a></div>
+			<div class="help">클릭 · 터치로 목적지 지정</div>
+			<div class="stat" id="stat"></div>
+		</div>
+		<div class="fallback" id="fallback"><ul class="post-list">{isles.map((m) => <li><span>{m.date}</span><a href={m.href}>{m.title}</a></li>)}</ul></div>
+		<script define:vars={{ isles }}>
+			const canvas = document.getElementById('gl');
+			const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
+			if (!gl) { document.getElementById('fallback').style.display = 'block'; document.getElementById('hud').style.display = 'none'; canvas.remove(); document.body.style.overflow = 'auto'; }
+			else {
+				const MAXI = 16, NT = 24, WORLD = 160; // 안개 지도 범위: [-80, 80]
+				const vs = `#version 300 es
+				void main(){ vec2 v = vec2((gl_VertexID<<1)&2, gl_VertexID&2); gl_Position = vec4(v*2.-1.,0.,1.); }`;
+				const fs = `#version 300 es
+				precision highp float; out vec4 o;
+				uniform vec2 R; uniform float T; uniform vec2 CAM; uniform float ZOOM; uniform vec2 BOAT; uniform float HEAD; uniform vec2 TGT; uniform float DAY;
+				uniform int NI; uniform vec4 ISL[${MAXI}]; uniform vec2 TRAIL[${NT}]; uniform sampler2D FOG; uniform float WORLD;
+				float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
+				float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
+				float fbm(vec2 p){ float a=0.5, s=0.; for(int i=0;i<5;i++){ s+=a*noise(p); p=p*2.03+vec2(17.,9.); a*=0.5; } return s; }
+				// 섬 거리(음수 = 육지). 해안선은 각도 노이즈로 울퉁불퉁하게
+				float island(vec2 p, vec4 I){ vec2 d = p - I.xy; float a = atan(d.y, d.x); float r = I.z*(1. + 0.22*sin(3.*a + I.w) + 0.1*sin(7.*a - I.w*2.) + 0.06*sin(13.*a)); return length(d) - r; }
+				float sdSeg(vec2 p, vec2 a, vec2 b){ vec2 pa=p-a, ba=b-a; float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.); return length(pa-ba*h); }
+				void main(){
+					vec2 uv = (gl_FragCoord.xy*2.-R)/R.y;
+					vec2 p = CAM + uv*ZOOM*0.5;
+					// 섬 중 가장 가까운 것
+					float d = 1e3; vec4 I = vec4(0.);
+					for(int i=0;i<NI;i++){ float di = island(p, ISL[i]); if(di<d){ d=di; I=ISL[i]; } }
+					// 바다
+					float depth = clamp(d/6., 0., 1.);
+					float n1 = fbm(p*0.35 + vec2(T*0.05, T*0.03)), n2 = fbm(p*1.2 - vec2(T*0.08, 0.));
+					vec3 deepD = vec3(0.07,0.33,0.48), shallowD = vec3(0.35,0.75,0.78);
+					vec3 deepN = vec3(0.02,0.06,0.12), shallowN = vec3(0.08,0.22,0.3);
+					vec3 deep = mix(deepN, deepD, DAY), shallow = mix(shallowN, shallowD, DAY);
+					vec3 col = mix(shallow, deep, depth);
+					col += (n1-0.5)*0.12 + (n2-0.5)*0.06;
+					// 반짝임
+					float sp = pow(noise(p*4. + vec2(T*0.6, -T*0.4)), 18.) * (0.5*DAY + 0.15) * (1.-depth*0.5);
+					col += sp;
+					// 해안 거품
+					float foam = smoothstep(0.9, 0.0, abs(d - 0.35 - 0.25*sin(T*1.3 + p.x*0.7 + p.y*0.5))) * smoothstep(0.3,0.7,n2);
+					col = mix(col, vec3(0.95), foam*0.8*step(0., d));
+					// 육지
+					if (d < 0.) {
+						vec3 sand = vec3(0.93,0.86,0.68), grass = vec3(0.36,0.62,0.38), dark = vec3(0.22,0.45,0.3);
+						float g = fbm(p*0.9 + I.w);
+						vec3 land = mix(sand, mix(grass, dark, g), smoothstep(-0.6, -1.6, d));
+						land *= mix(0.35, 1., DAY);
+						col = land;
+					}
+					// 항적
+					for(int i=0;i<${NT}-1;i++){ float s = sdSeg(p, TRAIL[i], TRAIL[i+1]); float w = 0.15 + 0.5*float(i)/float(${NT}); col = mix(col, vec3(0.95), smoothstep(w, w-0.12, s) * (1.-float(i)/float(${NT})) * 0.5 * smoothstep(0.4,0.6,n2)); }
+					// 목적지 링
+					float tr = abs(length(p-TGT) - 0.9 - 0.15*sin(T*4.)); col = mix(col, vec3(1.), smoothstep(0.12,0.0,tr)*0.7);
+					// 배: 선체 타원 + 돛
+					vec2 q = p - BOAT; float c = cos(HEAD), s = sin(HEAD); q = vec2(c*q.x + s*q.y, -s*q.x + c*q.y);
+					float hull = length(q/vec2(1.5, 0.55)) - 1.0; hull *= 0.55;
+					float stern = max(hull, -q.x - 1.1);
+					float deck = length(q/vec2(1.2, 0.36)) - 1.0;
+					vec3 wood = vec3(0.45,0.3,0.2)*mix(0.4,1.,DAY);
+					col = mix(col, vec3(0.05,0.08,0.12), smoothstep(0.1, -0.05, hull+0.12)*0.35); // 그림자
+					col = mix(col, wood, smoothstep(0.03, -0.03, hull));
+					col = mix(col, wood*1.4, smoothstep(0.03, -0.03, deck));
+					vec2 sq = q - vec2(0.15, 0.); float sail = max(abs(sq.y) - (0.85 - abs(sq.x)*1.1) * 0.75, abs(sq.x) - 0.75);
+					sail = max(sail, -sq.y + 0.0); // 한쪽 돛
+					col = mix(col, vec3(0.98)*mix(0.5,1.,DAY), smoothstep(0.03,-0.03, sail));
+					col = mix(col, vec3(0.2,0.15,0.1), smoothstep(0.05,0.0, length(q-vec2(0.15,0.))-0.07));
+					// 안개 지도
+					float fog = texture(FOG, (p + WORLD*0.5)/WORLD).r;
+					vec3 fogCol = mix(vec3(0.05,0.07,0.1), vec3(0.80,0.86,0.9), DAY);
+					col = mix(mix(fogCol, col, 0.3), col, fog);
+					col *= 1. - 0.25*dot(uv*0.5, uv*0.5);
+					o = vec4(col, 1.);
+				}`;
+				const prog = gl.createProgram();
+				for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(sh)); gl.attachShader(prog, sh); }
+				gl.linkProgram(prog); gl.useProgram(prog);
+				const U = (n) => gl.getUniformLocation(prog, n);
+				const islArr = new Float32Array(MAXI * 4); isles.slice(0, MAXI).forEach((I, i) => islArr.set([I.x, I.y, I.r, I.seed], i * 4));
+				gl.uniform4fv(U('ISL'), islArr); gl.uniform1i(U('NI'), Math.min(isles.length, MAXI)); gl.uniform1f(U('WORLD'), WORLD);
+				const hour = new Date().getHours() + new Date().getMinutes() / 60;
+				const day = Math.min(1, Math.max(0, (hour - 5.5) / 1.5)) * Math.min(1, Math.max(0, (20 - hour) / 1.5));
+				gl.uniform1f(U('DAY'), day); if (day < 0.5) document.getElementById('hud').classList.add('night');
+				// 안개 지도 텍스처
+				const fogC = document.createElement('canvas'); fogC.width = fogC.height = 256; const fctx = fogC.getContext('2d');
+				fctx.fillStyle = '#000'; fctx.fillRect(0, 0, 256, 256);
+				const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+				gl.uniform1i(U('FOG'), 0);
+				let fogDirty = true;
+				function reveal(x, y) { const px = (x + WORLD / 2) / WORLD * 256, py = (y + WORLD / 2) / WORLD * 256, r = 13 / WORLD * 256; const g = fctx.createRadialGradient(px, py, 0, px, py, r); g.addColorStop(0.6, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); fctx.fillStyle = g; fctx.fillRect(px - r, py - r, r * 2, r * 2); fogDirty = true; }
+				const scale = Math.min(devicePixelRatio, 2) * (innerWidth < 700 ? 0.5 : 0.6);
+				function resize() { canvas.width = Math.floor(innerWidth * scale); canvas.height = Math.floor(innerHeight * scale); gl.viewport(0, 0, canvas.width, canvas.height); }
+				addEventListener('resize', resize); resize();
+				// 배
+				const boat = { x: 0, y: 0, h: Math.PI / 2, v: 0 }, cam = { x: 0, y: 0 };
+				let tgt = { x: 0, y: 0 }, sailing = false, near = -1;
+				const trail = new Float32Array(NT * 2); for (let i = 0; i < NT; i++) { trail[i * 2] = 0; trail[i * 2 + 1] = 0; }
+				const intro = document.getElementById('intro'), nearEl = document.getElementById('near'), nt = document.getElementById('nt'), nd = document.getElementById('nd'), nb = document.getElementById('nb'), stat = document.getElementById('stat');
+				const ZOOM = innerWidth < 700 ? 30 : 38;
+				canvas.addEventListener('pointerdown', (e) => {
+					const ux = (e.clientX / innerWidth * 2 - 1) * (innerWidth / innerHeight), uy = -(e.clientY / innerHeight * 2 - 1);
+					tgt = { x: cam.x + ux * ZOOM * 0.5, y: cam.y + uy * ZOOM * 0.5 }; sailing = true; intro.classList.add('off');
+				});
+				reveal(0, 0);
+				let last = performance.now(), t0 = last, trailT = 0;
+				function step(dt) {
+					if (sailing) {
+						const dx = tgt.x - boat.x, dy = tgt.y - boat.y, dist = Math.hypot(dx, dy);
+						const want = Math.atan2(dy, dx); let da = want - boat.h; da = Math.atan2(Math.sin(da), Math.cos(da));
+						boat.h += Math.max(-1.6 * dt, Math.min(1.6 * dt, da));
+						const target = dist < 1.2 ? 0 : Math.min(7, dist * 1.2) * (1 - Math.min(1, Math.abs(da) / 1.2) * 0.8);
+						boat.v += (target - boat.v) * Math.min(1, dt * 1.5);
+						if (dist < 1.2 && boat.v < 0.3) sailing = false;
+					} else boat.v *= 0.96;
+					let nx = boat.x + Math.cos(boat.h) * boat.v * dt, ny = boat.y + Math.sin(boat.h) * boat.v * dt;
+					// 섬 충돌: 해안선 바깥에 머무름
+					for (const I of isles) { const d = Math.hypot(nx - I.x, ny - I.y); const rr = I.r * 1.25 + 0.9; if (d < rr) { nx = I.x + (nx - I.x) / d * rr; ny = I.y + (ny - I.y) / d * rr; boat.v *= 0.5; sailing = false; } }
+					const lim = WORLD / 2 - 6; nx = Math.max(-lim, Math.min(lim, nx)); ny = Math.max(-lim, Math.min(lim, ny));
+					boat.x = nx; boat.y = ny;
+					cam.x += (boat.x - cam.x) * Math.min(1, dt * 2); cam.y += (boat.y - cam.y) * Math.min(1, dt * 2);
+					trailT += dt; if (trailT > 0.12 && boat.v > 0.5) { trailT = 0; trail.copyWithin(2, 0); trail[0] = boat.x - Math.cos(boat.h) * 1.2; trail[1] = boat.y - Math.sin(boat.h) * 1.2; reveal(boat.x, boat.y); }
+					let best = -1, bd = 1e9;
+					isles.forEach((I, i) => { const d = Math.hypot(boat.x - I.x, boat.y - I.y) - I.r * 1.25; if (d < 3.2 && d < bd) { bd = d; best = i; } });
+					if (best !== near) { near = best; nearEl.classList.toggle('on', near >= 0); if (near >= 0) { nt.textContent = isles[near].title; nt.href = nb.href = isles[near].href; nd.textContent = isles[near].date; } }
+					stat.textContent = `${isles.length}개의 섬 · ${boat.v.toFixed(1)} kn`;
+				}
+				function frame(now) {
+					const dt = Math.min(0.05, (now - last) / 1000); last = now; step(dt);
+					if (fogDirty) { gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, fogC); fogDirty = false; }
+					gl.uniform2f(U('R'), canvas.width, canvas.height); gl.uniform1f(U('T'), (now - t0) / 1000);
+					gl.uniform2f(U('CAM'), cam.x, cam.y); gl.uniform1f(U('ZOOM'), ZOOM); gl.uniform2f(U('BOAT'), boat.x, boat.y); gl.uniform1f(U('HEAD'), boat.h);
+					gl.uniform2f(U('TGT'), sailing ? tgt.x : 1e4, sailing ? tgt.y : 1e4); gl.uniform2fv(U('TRAIL'), trail);
+					gl.drawArrays(gl.TRIANGLES, 0, 3); requestAnimationFrame(frame);
+				}
+				requestAnimationFrame(frame);
+			}
+		</script>
+	</body>
+</html>
