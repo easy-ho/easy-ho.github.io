@@ -1,0 +1,89 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { fileHistory, lineDiff, stripFrontmatter, titleOf } from '../../lib/git';
+
+const path = 'src/content/blog/2026-10-12-blog-built-with-claude-code.md';
+const revs = fileHistory(path);
+const title = titleOf(revs[revs.length - 1].content);
+const clean = (md: string) => stripFrontmatter(md).replace(/<figure[\s\S]*?<\/figure>/g, '[이미지 자리]').replace(/<details[\s\S]*?<\/details>/g, '').replace(/\n{3,}/g, '\n\n');
+const texts = revs.map((r) => clean(r.content).split('\n'));
+const steps = texts.slice(1).map((t, i) => lineDiff(texts[i], t));
+const meta = revs.map((r) => ({ short: r.short, date: r.date.slice(0, 10), msg: r.msg }));
+const data = { first: texts[0], steps, meta };
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`replay · ${SITE_TITLE}`} description="글이 고쳐진 과정을 diff로 재생" />
+		<style is:global>
+			h1 { font-size: 1.3rem; }
+			.ctl { display: flex; gap: 0.5em; align-items: center; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin: 1em 0; flex-wrap: wrap; }
+			.ctl button { font: inherit; background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--text); padding: 0.1em 0.6em; cursor: pointer; }
+			.ctl button:disabled { opacity: 0.4; cursor: default; }
+			.rev { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 0.8em; margin: 1em 0; }
+			.rev b { color: var(--text); font-weight: 650; }
+			pre.doc { font-family: var(--mono); font-size: 0.78rem; line-height: 1.7; white-space: pre-wrap; margin: 0; }
+			.l { display: block; transition: background 0.4s, opacity 0.4s, max-height 0.5s; }
+			.l.del { background: #fee2e2; color: #991b1b; text-decoration: line-through; }
+			.l.del.gone { opacity: 0; max-height: 0; overflow: hidden; }
+			.l.add { background: #dcfce7; }
+			.l.add.settle { background: transparent; }
+			.hint { color: var(--muted); font-size: 0.85rem; margin-top: 2em; }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>{title}</h1>
+			<div class="ctl">
+				<button id="prev">‹ 이전</button>
+				<button id="play">▶ 재생</button>
+				<button id="next">다음 ›</button>
+				<span id="pos"></span>
+			</div>
+			<div class="rev" id="rev"></div>
+			<pre class="doc" id="doc"></pre>
+			<p class="hint">이 글은 {revs.length}번 커밋됐다. 초고에서 지금 글까지 어떻게 고쳐졌는지 git 히스토리로 재생한다. 빨간 줄은 지워진 문장, 초록 줄은 새로 들어온 문장.</p>
+		</main>
+		<Footer />
+		<script define:vars={{ data }}>
+			const { first, steps, meta } = data;
+			const doc = document.getElementById('doc');
+			const rev = document.getElementById('rev');
+			const pos = document.getElementById('pos');
+			const prev = document.getElementById('prev'), next = document.getElementById('next'), play = document.getElementById('play');
+			let i = 0, timer = null;
+			const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+			const line = (cls, s) => `<span class="l ${cls}">${esc(s) || ' '}</span>`;
+			function render(k, animate) {
+				const m = meta[k];
+				rev.innerHTML = `<b>rev ${k + 1}/${meta.length}</b> · ${m.short} · ${m.date} · ${esc(m.msg)}`;
+				pos.textContent = `${k + 1} / ${meta.length}`;
+				prev.disabled = k === 0; next.disabled = k === meta.length - 1;
+				if (k === 0) { doc.innerHTML = first.map((s) => line('', s)).join(''); return; }
+				const ops = steps[k - 1];
+				if (!animate) { doc.innerHTML = ops.filter(([t]) => t !== '-').map(([, s]) => line('', s)).join(''); return; }
+				doc.innerHTML = ops.map(([t, s]) => line(t === '-' ? 'del' : t === '+' ? 'add' : '', s)).join('');
+				const firstChange = doc.querySelector('.del, .add');
+				if (firstChange) firstChange.scrollIntoView({ block: 'center', behavior: 'smooth' });
+				setTimeout(() => doc.querySelectorAll('.del').forEach((e) => e.classList.add('gone')), 1400);
+				setTimeout(() => doc.querySelectorAll('.add').forEach((e) => e.classList.add('settle')), 2600);
+			}
+			function go(k, animate) { i = Math.max(0, Math.min(meta.length - 1, k)); render(i, animate); }
+			function stop() { clearInterval(timer); timer = null; play.textContent = '▶ 재생'; }
+			prev.onclick = () => { stop(); go(i - 1, false); };
+			next.onclick = () => { stop(); go(i + 1, true); };
+			play.onclick = () => {
+				if (timer) return stop();
+				if (i === meta.length - 1) go(0, false);
+				play.textContent = '❚❚ 멈춤';
+				timer = setInterval(() => { if (i >= meta.length - 1) return stop(); go(i + 1, true); }, 3400);
+			};
+			go(0, false);
+		</script>
+	</body>
+</html>

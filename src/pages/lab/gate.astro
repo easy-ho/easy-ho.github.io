@@ -1,0 +1,75 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { buildInfo } from '../../lib/git';
+
+const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const b = buildInfo();
+const kst = new Date(new Date(b.builtAt).getTime() + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ');
+const script = [
+	['$ ', 'ssh guest@easy-ho.github.io'],
+	['', `[sudo] password for guest: ${'*'.repeat(8)}`],
+	['', 'guest is not in the sudoers file.  This incident will be reported.'],
+	['$ ', 'cat /etc/motd'],
+	['', `easyho.log  ·  built from ${b.short}${b.runNumber ? ` by run #${b.runNumber}` : ''}  ·  ${kst} KST  ·  ${b.node}`],
+	['$ ', 'ls ~/posts'],
+];
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`gate · ${SITE_TITLE}`} description="sudo 농담 한 줄 지나서 들어가는 홈" />
+		<style is:global>
+			pre.term { font-family: var(--mono); font-size: 0.8rem; line-height: 1.75; margin: 0 0 1.5em; white-space: pre-wrap; color: var(--muted); min-height: 11em; }
+			pre.term .p { color: var(--text); }
+			.cur::after { content: '▍'; animation: blink 1s step-end infinite; }
+			@keyframes blink { 50% { opacity: 0; } }
+			.post-list { opacity: 0; transform: translateY(6px); transition: opacity 0.6s, transform 0.6s; }
+			.post-list.open { opacity: 1; transform: none; }
+			.hint { color: var(--muted); font-size: 0.85rem; margin-top: 2em; }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<pre class="term" id="term"></pre>
+			<ul class="post-list" id="list">
+				{posts.map((post) => (
+					<li><FormattedDate date={post.data.pubDate} /><a href={`/blog/${post.id}/`}>{post.data.title}</a></li>
+				))}
+			</ul>
+			<p class="hint">첫 방문 때만 이 입장 장면이 나오고, 두 번째부터는 바로 목록이 뜬다(여기선 매번 보여줌). 빌드 정보는 진짜다. 아무 키나 누르면 건너뛴다.</p>
+		</main>
+		<Footer />
+		<script define:vars={{ script }}>
+			const term = document.getElementById('term'), list = document.getElementById('list');
+			let done = false;
+			const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+			async function type(prompt, text) {
+				const line = document.createElement('span');
+				line.innerHTML = prompt ? `<span class="p">${prompt}</span>` : '';
+				line.classList.add('cur'); term.appendChild(line);
+				if (prompt) { for (const ch of text) { if (done) break; line.append(ch); await sleep(28 + Math.random() * 40); } }
+				else { await sleep(250); line.append(text); }
+				line.classList.remove('cur'); term.append('\n');
+				await sleep(prompt ? 350 : 500);
+			}
+			async function run() {
+				for (const [p, t] of script) { if (done) break; await type(p, t); }
+				finish();
+			}
+			function finish() {
+				done = true;
+				term.innerHTML = script.map(([p, t]) => (p ? `<span class="p">${p}</span>` : '') + t).join('\n') + '\n';
+				list.classList.add('open');
+			}
+			addEventListener('keydown', finish, { once: true });
+			run();
+		</script>
+	</body>
+</html>

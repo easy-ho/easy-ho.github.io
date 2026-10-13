@@ -1,0 +1,54 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`status · ${SITE_TITLE}`} description="GitHub 활동으로 바뀌는 지금 상태" />
+		<style>
+			.face { font-family: var(--mono); font-size: 2rem; margin: 1em 0 0.2em; }
+			.state { font-size: 1.1rem; font-weight: 650; }
+			.sub { color: var(--muted); font-size: 0.9rem; }
+			ul.ev { font-family: var(--mono); font-size: 0.8rem; list-style: none; padding: 0; margin: 2em 0 0; color: var(--muted); }
+			ul.ev li { margin: 0.3em 0; }
+			ul.ev b { color: var(--text); font-weight: 650; }
+			.hint { color: var(--muted); font-size: 0.85rem; margin-top: 2.5em; }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="face" id="face">( ・_・)</div>
+			<div class="state" id="state">확인 중</div>
+			<div class="sub" id="sub"></div>
+			<ul class="ev" id="ev"></ul>
+			<p class="hint">GitHub 공개 활동 API를 브라우저에서 바로 읽어서, 마지막 커밋이 언제였는지로 지금 상태를 정한다. 서버 없음, 빌드 없음, 방문할 때마다 실시간. 지금은 블로그 계정 활동만 잡힌다.</p>
+		</main>
+		<Footer />
+		<script>
+			const face = document.getElementById('face'), state = document.getElementById('state'), sub = document.getElementById('sub'), ev = document.getElementById('ev');
+			const kstHour = (new Date().getUTCHours() + 9) % 24;
+			const rel = (ms) => { const h = ms / 3600e3; return h < 1 ? `${Math.floor(h * 60)}분 전` : h < 48 ? `${Math.floor(h)}시간 전` : `${Math.floor(h / 24)}일 전`; };
+			const label = { PushEvent: 'push', CreateEvent: 'create', IssuesEvent: 'issue', PullRequestEvent: 'pr', WatchEvent: 'star', ForkEvent: 'fork' };
+			fetch('https://api.github.com/users/easy-ho/events/public').then((r) => r.json()).then((events) => {
+				if (!Array.isArray(events) || !events.length) throw 0;
+				const last = new Date(events[0].created_at), since = Date.now() - last;
+				const h = since / 3600e3;
+				if (kstHour < 7) { face.textContent = '(－_－) zzZ'; state.textContent = '자는 중'; }
+				else if (h < 3) { face.textContent = '(⌐■_■)'; state.textContent = '방금까지 코딩 중'; }
+				else if (h < 24) { face.textContent = '( ・_・)'; state.textContent = '오늘 커밋 있음'; }
+				else if (h < 24 * 7) { face.textContent = '( ˘_˘ )'; state.textContent = '이번 주엔 조용함'; }
+				else { face.textContent = '(´-ω-`)'; state.textContent = '한동안 조용함'; }
+				sub.textContent = `마지막 활동 ${rel(since)} · KST ${String(kstHour).padStart(2, '0')}시`;
+				ev.innerHTML = events.slice(0, 5).map((e) => {
+					const what = e.type === 'PushEvent' ? (e.payload.commits || []).map((c) => c.message.split('\n')[0]).join(' / ') : e.type.replace('Event', '');
+					return `<li><b>${label[e.type] || e.type}</b> ${e.repo.name}  ${what}  <span>${rel(Date.now() - new Date(e.created_at))}</span></li>`;
+				}).join('');
+			}).catch(() => { face.textContent = '(x_x)'; state.textContent = 'GitHub API 응답 없음'; sub.textContent = '비로그인 호출 한도(시간당 60회)에 걸렸을 수 있다.'; });
+		</script>
+	</body>
+</html>

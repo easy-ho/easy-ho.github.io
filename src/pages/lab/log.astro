@@ -1,0 +1,107 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { buildInfo, commits, numstat, showFile, titleOf } from '../../lib/git';
+
+const POST_DIR = 'src/content/blog/';
+const slugOf = (p: string) => p.slice(POST_DIR.length).replace(/\.mdx?$/, '');
+// 제목은 항상 현재(HEAD) 기준. 없으면(내린 글) 그 시점 내용에서.
+const nameOf = (sha: string, path: string) => titleOf(showFile('HEAD', path)) || titleOf(showFile(sha, path));
+
+type Line = { ts: string; level: string; logger: string; msg: string; href?: string; sha: string };
+const lines: Line[] = [];
+const all = commits();
+for (let i = 0; i < all.length; i++) {
+	const c = all[i];
+	const posts = c.files.filter((f) => f.path.startsWith(POST_DIR));
+	for (const f of posts) {
+		const slug = slugOf(f.path);
+		if (f.status === 'A') {
+			lines.push({ ts: c.date, level: 'INFO', logger: 'post', msg: `발행  ${nameOf(c.sha, f.path)}`, href: `/blog/${slug}/`, sha: c.short });
+		} else if (f.status === 'M') {
+			const { add, del } = numstat(c.sha, f.path);
+			lines.push({ ts: c.date, level: 'DEBUG', logger: 'post', msg: `수정  ${nameOf(c.sha, f.path)}  +${add} −${del}`, href: `/blog/${slug}/`, sha: c.short });
+		} else if (f.status === 'D') {
+			lines.push({ ts: c.date, level: 'WARN', logger: 'post', msg: `내림  ${nameOf(all[i - 1]?.sha, f.path)}`, sha: c.short });
+		}
+	}
+	if (posts.length === 0) {
+		lines.push({ ts: c.date, level: 'TRACE', logger: 'site', msg: c.msg, sha: c.short });
+	}
+}
+const build = buildInfo();
+lines.push({ ts: build.builtAt, level: 'INFO', logger: 'build', msg: `빌드 완료  ${build.short}${build.runNumber ? `  run #${build.runNumber}` : ''}  ${build.runner} ${build.node}`, sha: build.short });
+
+const fmt = (iso: string) => {
+	const d = new Date(iso);
+	const kst = new Date(d.getTime() + 9 * 3600 * 1000);
+	return kst.toISOString().slice(0, 16).replace('T', ' ');
+};
+const rows = lines.map((l) => ({ ...l, ts: fmt(l.ts) }));
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`log · ${SITE_TITLE}`} description="git 히스토리를 그대로 흘리는 홈" />
+		<style>
+			.bar { display: flex; gap: 0.3em; align-items: center; font-family: var(--mono); font-size: 0.8rem; color: var(--muted); margin-bottom: 0.8em; flex-wrap: wrap; }
+			.bar .cmd { margin-right: auto; }
+			.bar button { font: inherit; background: none; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); padding: 0.1em 0.5em; cursor: pointer; }
+			.bar button.on { color: var(--text); border-color: var(--text); }
+			pre.log { font-family: var(--mono); font-size: 0.78rem; line-height: 1.75; margin: 0; white-space: pre; overflow-x: auto; min-height: 12em; }
+			.ln { display: none; opacity: 0; transition: opacity 0.25s; }
+			.ln.show { display: block; }
+			.ln.in { opacity: 1; }
+			.ts { color: var(--muted); }
+			.lv { display: inline-block; width: 5.5ch; font-weight: 650; }
+			.INFO .lv { color: #15803d; } .DEBUG .lv { color: #6b7280; } .WARN .lv { color: #b45309; } .TRACE .lv { color: #9ca3af; }
+			.lg { color: var(--muted); }
+			.ln a { text-decoration: none; }
+			.ln a:hover { text-decoration: underline; }
+			.sha { color: #c7cbd1; margin-left: 0.6em; }
+			.cur::after { content: '▍'; animation: blink 1s step-end infinite; color: var(--muted); }
+			@keyframes blink { 50% { opacity: 0; } }
+			.hint { color: var(--muted); font-size: 0.85rem; margin-top: 2em; }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="bar">
+				<span class="cmd">$ tail -f easyho.log</span>
+				<button data-l="ALL" class="on">all</button>
+				<button data-l="INFO">info</button>
+				<button data-l="DEBUG">debug</button>
+				<button data-l="WARN">warn</button>
+				<button data-l="TRACE">trace</button>
+			</div>
+			<pre class="log" id="log">{rows.map((r) => (
+				<span class={`ln ${r.level}`} data-l={r.level}><span class="ts">{r.ts}</span>  <span class="lv">{r.level}</span> <span class="lg">[{r.logger}]</span>  {r.href ? <a href={r.href}>{r.msg}</a> : r.msg}<span class="sha">{r.sha}</span>{'\n'}</span>
+			))}<span class="cur"></span></pre>
+			<p class="hint">홈 자체가 로그다. 글을 쓰면 INFO, 고치면 DEBUG, 내리면 WARN. 전부 git 히스토리에서 빌드 때 자동으로 생긴다. 손으로 쓰는 줄은 없다.</p>
+		</main>
+		<Footer />
+		<script>
+			const lines = [...document.querySelectorAll('.ln')];
+			let filter = 'ALL';
+			const visible = () => lines.filter((l) => filter === 'ALL' || l.dataset.l === filter);
+			function apply() {
+				lines.forEach((l) => l.classList.remove('show', 'in'));
+				visible().forEach((l, i) => {
+					l.classList.add('show');
+					setTimeout(() => l.classList.add('in'), 40 * i);
+				});
+			}
+			document.querySelectorAll('.bar button').forEach((b) => b.addEventListener('click', () => {
+				document.querySelectorAll('.bar button').forEach((x) => x.classList.remove('on'));
+				b.classList.add('on');
+				filter = b.dataset.l;
+				apply();
+			}));
+			apply();
+		</script>
+	</body>
+</html>

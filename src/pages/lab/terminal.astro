@@ -1,0 +1,98 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import { GITHUB_URL, SITE_TITLE } from '../../consts';
+import { buildInfo } from '../../lib/git';
+
+const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const b = buildInfo();
+const data = {
+	posts: posts.map((p) => ({ id: p.id, title: p.data.title, desc: p.data.description, date: p.data.pubDate.toISOString().slice(0, 10) })),
+	build: { short: b.short, at: b.builtAt, node: b.node },
+	github: GITHUB_URL,
+};
+---
+
+<!doctype html>
+<html lang="ko">
+	<head>
+		<BaseHead title={`terminal · ${SITE_TITLE}`} description="평소엔 보통 홈, 키를 치면 터미널" />
+		<style>
+			.kbd-hint { color: #c7cbd1; font-family: var(--mono); font-size: 0.78rem; margin-top: 3em; }
+			#term { display: none; position: fixed; left: 0; right: 0; bottom: 0; max-height: 55vh; background: #1f2328; color: #d1d5db; font-family: var(--mono); font-size: 0.8rem; line-height: 1.6; padding: 0.8em 1.25rem calc(0.8em + env(safe-area-inset-bottom, 0px)); overflow-y: auto; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); }
+			#term.open { display: block; }
+			#out { white-space: pre-wrap; margin: 0; font: inherit; }
+			#out a { color: #93c5fd; }
+			.row { display: flex; gap: 0.5em; }
+			.row .ps { color: #86efac; white-space: nowrap; }
+			#in { flex: 1; background: none; border: 0; outline: 0; color: inherit; font: inherit; padding: 0; }
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<p class="muted">백엔드 개발자. 일하면서 겪은 삽질, 설계, 자동화 이야기를 적는다.</p>
+			<ul class="post-list">
+				{posts.map((post) => (
+					<li><FormattedDate date={post.data.pubDate} /><a href={`/blog/${post.id}/`}>{post.data.title}</a></li>
+				))}
+			</ul>
+			<p class="kbd-hint">press any key_</p>
+		</main>
+		<Footer />
+		<div id="term">
+			<pre id="out"></pre>
+			<div class="row"><span class="ps">guest@easyho.log ~ $</span><input id="in" autocomplete="off" spellcheck="false" /></div>
+		</div>
+		<script define:vars={{ data }}>
+			const { posts, build, github } = data;
+			const term = document.getElementById('term'), out = document.getElementById('out'), input = document.getElementById('in');
+			const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+			const print = (html) => { out.innerHTML += html + '\n'; term.scrollTop = term.scrollHeight; };
+			const find = (arg) => posts[+arg - 1] || posts.find((p) => p.id.includes(arg));
+			const ago = () => { const s = (Date.now() - new Date(build.at)) / 1000; return s < 3600 ? `${Math.floor(s / 60)}m` : s < 86400 ? `${Math.floor(s / 3600)}h ${Math.floor(s % 3600 / 60)}m` : `${Math.floor(s / 86400)}d ${Math.floor(s % 86400 / 3600)}h`; };
+			const cmds = {
+				help: () => 'ls          글 목록\ncat &lt;n&gt;     글 요약\nopen &lt;n&gt;    글 열기\nabout       소개\nuptime      마지막 배포 이후 경과\nwhoami\nclear  exit',
+				ls: () => posts.map((p, i) => `${String(i + 1).padStart(2)}  ${p.date}  <a href="/blog/${p.id}/">${esc(p.title)}</a>`).join('\n'),
+				cat: (a) => { const p = find(a); return p ? `# ${esc(p.title)}\n${esc(p.desc)}` : `cat: ${esc(a || '')}: No such file`; },
+				open: (a) => { const p = find(a); if (!p) return `open: ${esc(a || '')}: not found`; location.href = `/blog/${p.id}/`; return `opening ${p.id}…`; },
+				about: () => { location.href = '/about/'; return 'opening about…'; },
+				github: () => { open(github, '_blank'); return github; },
+				uptime: () => `up ${ago()} since build ${build.short} (${build.node})`,
+				whoami: () => 'guest',
+				pwd: () => '/home/guest',
+				clear: () => { out.innerHTML = ''; return ''; },
+				exit: () => { term.classList.remove('open'); return ''; },
+				sudo: () => 'guest is not in the sudoers file.  This incident will be reported.',
+			};
+			function run(line) {
+				const [cmd, ...args] = line.trim().split(/\s+/);
+				print(`<span style="color:#86efac">guest@easyho.log ~ $</span> ${esc(line)}`);
+				if (!cmd) return;
+				const fn = cmds[cmd];
+				const res = fn ? fn(args.join(' ')) : `${esc(cmd)}: command not found. try <b>help</b>`;
+				if (res) print(res);
+			}
+			function openTerm(firstKey) {
+				term.classList.add('open');
+				if (!out.innerHTML) print('easyho.log shell · <b>help</b> 를 쳐봐');
+				input.focus();
+				if (firstKey && firstKey.length === 1) input.value = firstKey;
+			}
+			addEventListener('keydown', (e) => {
+				if (term.classList.contains('open') || e.metaKey || e.ctrlKey || e.altKey) return;
+				if (e.key === 'Escape') return;
+				e.preventDefault();
+				openTerm(e.key);
+			});
+			input.addEventListener('keydown', (e) => {
+				if (e.key === 'Enter') { run(input.value); input.value = ''; }
+				if (e.key === 'Escape') cmds.exit();
+			});
+			document.querySelector('.kbd-hint').onclick = () => openTerm();
+		</script>
+	</body>
+</html>
