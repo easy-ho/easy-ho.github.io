@@ -9,7 +9,7 @@ const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueO
 const hash = (s: string) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
 const cards = posts.map((p) => {
 	const chars = (p.body ?? '').replace(/<[^>]+>/g, '').replace(/\s+/g, '').length;
-	const rarity = chars > 2600 ? 'legendary' : chars > 2200 ? 'rare' : 'common';
+	const rarity = chars > 2400 ? 'legendary' : chars > 2000 ? 'rare' : 'common';
 	return {
 		id: p.id, title: p.data.title, desc: p.data.description, href: `/blog/${p.id}/`,
 		date: p.data.pubDate.toISOString().slice(0, 10).replaceAll('-', '.'),
