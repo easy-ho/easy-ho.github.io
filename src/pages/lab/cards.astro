@@ -5,18 +5,36 @@ import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
-const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const SLOTS = 5;
+const TIERS = ['C', 'U', 'R', 'SR', 'UR'] as const;
+type Tier = (typeof TIERS)[number];
 const hash = (s: string) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
-const cards = posts.map((p) => {
-	const chars = (p.body ?? '').replace(/<[^>]+>/g, '').replace(/\s+/g, '').length;
-	const rarity = chars > 2400 ? 'legendary' : chars > 2000 ? 'rare' : 'common';
+
+const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const cardsAll = posts.map((p) => {
+	const body = p.body ?? '';
+	const chars = body.replace(/<[^>]+>/g, '').replace(/```[\s\S]*?```/g, '').replace(/\s+/g, '').length;
+	const images = (body.match(/!\[[^\]]*\]\(/g) ?? []).length + (body.match(/img-placeholder/g) ?? []).length;
+	const code = (body.match(/```/g) ?? []).length / 2;
+	// 등급 점수: 분량 + 이미지 + 코드 블록. frontmatter grade가 있으면 그걸 우선.
+	const score = chars / 500 + images * 1.2 + code * 0.8;
+	const auto: Tier = score >= 10.5 ? 'UR' : score >= 8 ? 'SR' : score >= 6.5 ? 'R' : score >= 4.5 ? 'U' : 'C';
+	const tier: Tier = p.data.grade ?? auto;
 	return {
-		id: p.id, title: p.data.title, desc: p.data.description, href: `/blog/${p.id}/`,
+		id: p.id, title: p.data.title, href: `/blog/${p.id}/`, category: p.data.category,
 		date: p.data.pubDate.toISOString().slice(0, 10).replaceAll('-', '.'),
-		chars, min: Math.max(1, Math.round(chars / 500)), rarity, seed: hash(p.id) % 1000, hue: hash(p.data.title) % 360,
+		chars, min: Math.max(1, Math.round(chars / 500)), tier, seed: hash(p.id) % 1000, hue: hash(p.data.title) % 360, blank: false,
 	};
 });
-const label = { common: 'COMMON', rare: 'RARE', legendary: 'LEGENDARY' } as const;
+const cats = [...new Set(cardsAll.map((c) => c.category))];
+const packs = cats.map((cat, pi) => {
+	const own = cardsAll.filter((c) => c.category === cat).slice(0, SLOTS);
+	const blanks = Array.from({ length: SLOTS - own.length }, (_, i) => ({ id: `blank-${pi}-${i}`, title: '아직 안 쓴 글', href: '', category: cat, date: '----.--.--', chars: 0, min: 0, tier: 'C' as Tier, seed: (pi * 97 + i * 13) % 1000, hue: 0, blank: true }));
+	// 낮은 등급이 앞, 높은 등급이 맨 뒤
+	const cards = [...blanks, ...own].sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier));
+	return { cat, hue: hash(cat) % 360, cards, top: cards[cards.length - 1].tier, count: own.length };
+});
+const tierName: Record<Tier, string> = { C: 'COMMON', U: 'UNCOMMON', R: 'RARE', SR: 'SUPER RARE', UR: 'ULTRA RARE' };
 ---
 
 <!doctype html>
@@ -25,126 +43,227 @@ const label = { common: 'COMMON', rare: 'RARE', legendary: 'LEGENDARY' } as cons
 		<BaseHead title={`cards · ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
 		<style is:global>
 			body { background: #0f1115; color: #e5e7eb; }
+			body.shake { animation: shake 0.45s; }
+			@keyframes shake { 10%,90% { translate: -2px 0; } 20%,80% { translate: 4px 0; } 30%,50%,70% { translate: -6px 2px; } 40%,60% { translate: 6px -2px; } }
 			header .brand, header .links a { color: #e5e7eb !important; }
 			footer, footer a { color: #6b7280 !important; }
 			main { max-width: 1100px; padding-bottom: 2rem; }
-			.stage { min-height: max(70vh, 440px); display: grid; place-items: center; perspective: 1400px; position: relative; }
-			.hint { text-align: center; color: #9ca3af; font-size: 0.9rem; margin-top: -1rem; }
-			.col { text-align: center; font-family: var(--mono); font-size: 0.8rem; color: #6b7280; margin-top: 1.2rem; }
+			.hint { text-align: center; color: #9ca3af; font-size: 0.9rem; min-height: 1.4em; }
+			.col { text-align: center; font-family: var(--mono); font-size: 0.8rem; color: #6b7280; margin-top: 1rem; }
 			.col button { font: inherit; color: inherit; background: none; border: 1px solid #374151; border-radius: 4px; padding: 0.1em 0.6em; cursor: pointer; margin-left: 0.8em; }
 
-			/* 팩 */
-			.pack { width: 220px; height: 330px; position: relative; cursor: pointer; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(.2,.8,.2,1); animation: float 3.2s ease-in-out infinite; }
-			.pack:hover { transform: rotateY(-8deg) rotateX(6deg) scale(1.03); }
+			/* 선반 */
+			.shelf { display: flex; justify-content: center; gap: 2.2rem; flex-wrap: wrap; padding: 2rem 0 1.5rem; perspective: 1200px; }
+			.shelf.off { display: none; }
+			.pack { --h: 200; width: 190px; height: 290px; position: relative; cursor: pointer; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(.2,.8,.2,1); animation: float 3.4s ease-in-out infinite; }
+			.pack:nth-child(2n) { animation-delay: -1.7s; }
+			.pack:hover { transform: rotateY(-10deg) rotateX(6deg) scale(1.04); }
 			@keyframes float { 50% { translate: 0 -8px; } }
-			.pack .body { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(160deg, #1f2937, #0b0d12 60%, #1f2937); box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.08); overflow: hidden; }
-			.pack .body::before { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.18) 45%, rgba(120,200,255,0.25) 50%, rgba(255,120,220,0.2) 55%, transparent 70%); background-size: 250% 250%; animation: sweep 3.6s linear infinite; mix-blend-mode: screen; }
+			.pack .body { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(160deg, hsl(var(--h) 35% 22%), #0b0d12 55%, hsl(var(--h) 30% 18%)); box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(255,255,255,0.08); overflow: hidden; }
+			.pack .body::before { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.16) 45%, rgba(120,200,255,0.22) 50%, rgba(255,120,220,0.18) 55%, transparent 70%); background-size: 250% 250%; animation: sweep 3.6s linear infinite; mix-blend-mode: screen; }
 			@keyframes sweep { to { background-position: 250% 0; } }
-			.pack .name { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-weight: 800; font-size: 1.6rem; letter-spacing: -0.03em; }
-			.pack .sub { position: absolute; left: 0; right: 0; top: 58%; text-align: center; font-family: var(--mono); font-size: 0.72rem; color: #9ca3af; }
-			.pack .tear { position: absolute; left: 0; right: 0; top: 0; height: 56px; border-radius: 10px 10px 0 0; background: linear-gradient(160deg, #273041, #10131a); border-bottom: 2px dashed rgba(255,255,255,0.15); transition: transform 0.5s ease-in, opacity 0.5s; }
-			.pack .tear span { position: absolute; left: 14px; top: 18px; font-family: var(--mono); font-size: 0.7rem; color: #9ca3af; }
-			.pack.open { animation: none; pointer-events: none; }
-			.pack.open .tear { transform: translateY(-80px) rotate(-6deg); opacity: 0; }
-			.pack.open .body { transition: opacity 0.4s 0.45s, transform 0.4s 0.45s; opacity: 0; transform: translateY(40px) scale(0.9); }
+			.pack .cat { position: absolute; left: 0; right: 0; top: 44%; text-align: center; font-weight: 800; font-size: 1.35rem; letter-spacing: -0.02em; padding: 0 1em; }
+			.pack .sub { position: absolute; left: 0; right: 0; top: 58%; text-align: center; font-family: var(--mono); font-size: 0.7rem; color: #9ca3af; }
+			.pack .tear { position: absolute; left: 0; right: 0; top: 0; height: 50px; border-radius: 10px 10px 0 0; background: linear-gradient(160deg, hsl(var(--h) 25% 28%), #10131a); border-bottom: 2px dashed rgba(255,255,255,0.15); }
+			.pack .tear span { position: absolute; left: 12px; top: 16px; font-family: var(--mono); font-size: 0.68rem; color: #9ca3af; }
+
+			/* 개봉 무대 */
+			.stage { display: none; min-height: 70vh; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem; perspective: 1400px; }
+			.stage.on { display: flex; }
+			.opening { width: 190px; height: 290px; position: relative; }
+			.opening .tear { position: absolute; left: 0; right: 0; top: 0; height: 50px; border-radius: 10px 10px 0 0; background: #1a1f2a; border-bottom: 2px dashed rgba(255,255,255,0.15); animation: tearOff 0.6s ease-in forwards; }
+			@keyframes tearOff { to { transform: translateY(-90px) rotate(-8deg); opacity: 0; } }
+			.opening .body { position: absolute; inset: 0; border-radius: 10px; background: linear-gradient(160deg, hsl(var(--h) 35% 22%), #0b0d12 55%); animation: bodyOff 0.5s 0.5s ease-in forwards; }
+			@keyframes bodyOff { to { transform: translateY(60px) scale(0.9); opacity: 0; } }
+			.deck { position: relative; width: 200px; aspect-ratio: 63/88; }
+			.deck:empty { display: none; }
+			.deck .c { position: absolute; inset: 0; }
+			.deck .c:nth-child(1) { translate: 8px 8px; } .deck .c:nth-child(2) { translate: 6px 6px; } .deck .c:nth-child(3) { translate: 4px 4px; } .deck .c:nth-child(4) { translate: 2px 2px; }
+			.deck .c.top { cursor: pointer; }
+			.deck .c.top:hover { translate: 0 -6px; }
+			.deck .c.peek { animation: peek 1.6s ease-in-out forwards; }
+			@keyframes peek { 0% { translate: 0 0; } 60% { translate: 0 -60px; rotate: -4deg; } 100% { translate: 0 -70px; rotate: -5deg; } }
+			.deck .c.peek .face.back::after { animation: charge 1.6s ease-in forwards; }
+			@keyframes charge { to { box-shadow: 0 0 60px 20px rgba(255,220,120,0.55), inset 0 0 0 2px rgba(255,220,120,0.8); } }
+			.row { display: flex; gap: 0.9rem; flex-wrap: wrap; justify-content: center; min-height: 100px; padding: 0.5rem; }
+			.row .card { width: 150px; }
+			@media (max-width: 720px) { .row .card { width: 120px; } }
 
 			/* 카드 */
-			.hand { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; gap: 1.2rem; flex-wrap: wrap; padding: 1rem; pointer-events: none; }
-			.card { --px: 50%; --py: 50%; --rx: 0deg; --ry: 0deg; --o: 0; width: 200px; aspect-ratio: 63/88; position: relative; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 0.12s; opacity: 0; translate: 0 60px; pointer-events: auto; cursor: pointer; }
-			.card.in { animation: deal 0.7s cubic-bezier(.2,.8,.2,1) forwards; }
-			@keyframes deal { from { opacity: 0; translate: 0 80px; } to { opacity: 1; translate: 0 0; } }
+			.card { --px: 50%; --py: 50%; --rx: 0deg; --ry: 0deg; --o: 0; width: 200px; aspect-ratio: 63/88; position: relative; container-type: inline-size; transform-style: preserve-3d; transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 0.12s; cursor: pointer; }
+			.card.blank { cursor: default; }
+			.card .inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.7s cubic-bezier(.2,.8,.2,1); transform: rotateY(180deg); }
+			.card.flip .inner { transform: rotateY(0deg); }
 			.card .face { position: absolute; inset: 0; border-radius: 12px; backface-visibility: hidden; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.55); }
 			.card .back { background: repeating-linear-gradient(45deg, #171b24 0 6px, #11141b 6px 12px); transform: rotateY(180deg); display: grid; place-items: center; font-weight: 800; color: #374151; letter-spacing: 0.1em; }
 			.card .back::after { content: ''; position: absolute; inset: 10px; border: 1px solid #2a3140; border-radius: 8px; }
-			.card .inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 0.8s cubic-bezier(.2,.8,.2,1); transform: rotateY(180deg); }
-			.card.flip .inner { transform: rotateY(0deg); }
 			.front { background: #0b0d12; color: #f3f4f6; }
-			.art { position: absolute; left: 10px; right: 10px; top: 10px; height: 46%; border-radius: 8px; overflow: hidden; background: hsl(var(--hue) 40% 18%); }
+			.card.blank .front { background: #15181e; color: #4b5563; }
+			.art { position: absolute; left: 5%; right: 5%; top: 3.6%; height: 46%; border-radius: 8px; overflow: hidden; background: hsl(var(--hue) 40% 18%); }
+			.card.blank .art { background: repeating-linear-gradient(-45deg, #1b1f27 0 8px, #15181e 8px 16px); }
 			.art svg { width: 100%; height: 100%; display: block; }
-			.front .t { position: absolute; left: 12px; right: 12px; top: 54%; font-weight: 800; font-size: 0.95rem; line-height: 1.3; letter-spacing: -0.02em; }
-			.front .m { position: absolute; left: 12px; right: 12px; bottom: 30px; font-family: var(--mono); font-size: 0.62rem; color: #9ca3af; display: flex; justify-content: space-between; }
-			.front .r { position: absolute; left: 12px; bottom: 10px; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em; color: #6b7280; }
-			.front .n { position: absolute; right: 12px; bottom: 10px; font-family: var(--mono); font-size: 0.6rem; color: #4b5563; }
-			.card.rare .front .r { color: #93c5fd; } .card.legendary .front .r { color: #fbbf24; }
-			.card.legendary .front { box-shadow: inset 0 0 0 2px #b4891e; }
-			.card.rare .front { box-shadow: inset 0 0 0 1px #3b82f6; }
-			/* 홀로 포일 */
+			.front .t { position: absolute; left: 6%; right: 6%; top: 54%; font-weight: 800; font-size: 6.6cqw; line-height: 1.3; letter-spacing: -0.02em; }
+			.front .m { position: absolute; left: 6%; right: 6%; bottom: 11%; font-family: var(--mono); font-size: 4.2cqw; color: #9ca3af; display: flex; justify-content: space-between; white-space: nowrap; }
+			.front .r { position: absolute; left: 6%; bottom: 4%; font-family: var(--mono); font-size: 4.2cqw; letter-spacing: 0.12em; color: #6b7280; white-space: nowrap; }
+			.front .n { position: absolute; right: 8%; top: 6%; font-family: var(--mono); font-size: 4cqw; color: rgba(255,255,255,0.75); background: rgba(0,0,0,0.45); padding: 0.15em 0.5em; border-radius: 999px; }
+			.card.U .front .r { color: #a7f3d0; } .card.R .front .r { color: #93c5fd; } .card.SR .front .r { color: #fbbf24; } .card.UR .front .r { color: #f0abfc; }
+			.card.R .front { box-shadow: inset 0 0 0 1px #3b82f6; }
+			.card.SR .front { box-shadow: inset 0 0 0 2px #b4891e; }
+			.card.UR .front::before { content: ''; position: absolute; inset: 0; padding: 3px; border-radius: 12px; background: conic-gradient(from var(--a, 0deg), #f0abfc, #93c5fd, #a7f3d0, #fde68a, #f0abfc); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; -webkit-mask-composite: xor; animation: spin 3s linear infinite; pointer-events: none; z-index: 2; }
+			@property --a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+			@keyframes spin { to { --a: 360deg; } }
 			.shine, .glare { position: absolute; inset: 0; pointer-events: none; border-radius: 12px; }
-			.shine { background: linear-gradient(115deg, transparent 20%, rgba(255,0,200,0.55) 36%, rgba(0,255,255,0.55) 44%, rgba(255,255,0,0.55) 52%, rgba(0,255,120,0.5) 60%, transparent 76%); background-size: 300% 300%; background-position: var(--px) var(--py); mix-blend-mode: color-dodge; opacity: calc(var(--o) * 0.55); filter: brightness(0.9) contrast(1.4); }
-			.card.common .shine { background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 66%); mix-blend-mode: screen; }
-			.card.legendary .shine::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 9 -4'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>"); background-position: calc(var(--px) * -1) calc(var(--py) * -1); mix-blend-mode: overlay; }
+			.shine { background: linear-gradient(115deg, transparent 20%, rgba(255,0,200,0.6) 36%, rgba(0,255,255,0.6) 44%, rgba(255,255,0,0.6) 52%, rgba(0,255,120,0.55) 60%, transparent 76%); background-size: 300% 300%; background-position: var(--px) var(--py); mix-blend-mode: color-dodge; opacity: calc(var(--o) * 0.6); filter: brightness(0.9) contrast(1.4); }
+			.card.C .shine { display: none; }
+			.card.U .shine { background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.35) 48%, transparent 66%); mix-blend-mode: screen; }
+			.card.SR .shine::after, .card.UR .shine::after { content: ''; position: absolute; inset: 0; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 9 -4'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.5'/></svg>"); background-position: calc(var(--px) * -1) calc(var(--py) * -1); mix-blend-mode: overlay; }
+			.card.UR .shine { opacity: calc(var(--o) * 0.6 + 0.25); }
 			.glare { background: radial-gradient(circle at var(--px) var(--py), rgba(255,255,255,0.55), rgba(255,255,255,0.05) 40%, transparent 70%); mix-blend-mode: overlay; opacity: calc(var(--o) * 0.8); }
-			@media (max-width: 720px) { .card { width: 150px; } .hand { gap: 0.6rem; } }
+
+			/* 연출 */
+			.fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+			.flash { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, rgba(255,255,255,0.95), rgba(255,220,150,0.5) 30%, transparent 65%); animation: flash 0.7s ease-out forwards; }
+			@keyframes flash { to { opacity: 0; } }
+			.spark { position: absolute; left: 50%; top: 45%; width: 6px; height: 6px; border-radius: 50%; background: var(--c); animation: spark 1s cubic-bezier(.1,.8,.3,1) forwards; }
+			@keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
+			.banner { position: absolute; left: 0; right: 0; top: 18%; text-align: center; font-weight: 900; font-size: clamp(2rem, 8vw, 5rem); letter-spacing: -0.04em; color: #fff; text-shadow: 0 0 30px rgba(255,220,120,0.9); animation: banner 1.4s ease-out forwards; }
+			@keyframes banner { 0% { transform: scale(0.4); opacity: 0; } 20% { transform: scale(1.1); opacity: 1; } 70% { opacity: 1; } 100% { transform: scale(1.2) translateY(-20px); opacity: 0; } }
 		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<div class="stage" id="stage">
-				<div class="pack" id="pack">
-					<div class="body"><div class="name">easyho.log</div><div class="sub">BOOSTER · {cards.length} CARDS</div></div>
-					<div class="tear"><span>TEAR HERE ✂</span></div>
-				</div>
-				<div class="hand" id="hand">
-					{cards.map((c, i) => (
-						<div class={`card ${c.rarity}`} data-i={i} data-id={c.id} data-href={c.href} style={`--hue:${c.hue}`}>
-							<div class="inner">
-								<div class="face front">
-									<div class="art"><svg viewBox="0 0 200 92" preserveAspectRatio="none">
-										<filter id={`f${i}`}><feTurbulence type="fractalNoise" baseFrequency="0.007 0.018" numOctaves="2" seed={c.seed} /><feColorMatrix values={`0 0 0 0 ${(0.3 + (c.hue % 7) / 10).toFixed(2)}  0 0 0 0 ${(0.4 + (c.hue % 5) / 10).toFixed(2)}  0 0 0 0 0.95  0 0 0 1.6 -0.3`} /><feComponentTransfer><feFuncA type="discrete" tableValues="0 .3 .6 1" /></feComponentTransfer></filter>
-										<rect width="200" height="92" filter={`url(#f${i})`} />
-									</svg></div>
-									<div class="t">{c.title}</div>
-									<div class="m"><span>{c.date}</span><span>{c.min}분 · {c.chars.toLocaleString()}자</span></div>
-									<div class="r">{label[c.rarity]}</div>
-									<div class="n">No.{String(cards.length - i).padStart(3, '0')}</div>
-									<div class="shine"></div><div class="glare"></div>
-								</div>
-								<div class="face back">easyho</div>
-							</div>
-						</div>
-					))}
-				</div>
+			<div class="shelf" id="shelf">
+				{packs.map((p, i) => (
+					<div class="pack" data-i={i} style={`--h:${p.hue}`}>
+						<div class="body"><div class="cat">{p.cat}</div><div class="sub">{SLOTS} CARDS · {p.count} 글</div></div>
+						<div class="tear"><span>TEAR HERE ✂</span></div>
+					</div>
+				))}
 			</div>
-			<p class="hint" id="hint">팩을 눌러서 뜯기</p>
-			<div class="col"><span id="colcount"></span><button id="reset">다시 뜯기</button></div>
+			<p class="hint" id="hint">팩을 골라서 뜯기</p>
+			<div class="stage" id="stage">
+				<div class="opening" id="opening" hidden><div class="body"></div><div class="tear"></div></div>
+				<div class="deck" id="deck"></div>
+				<div class="row" id="row"></div>
+			</div>
+			<div class="col"><span id="colcount"></span><button id="reset" hidden>선반으로</button></div>
+			<template id="tpl">
+				{packs.flatMap((p) => p.cards).map((c) => (
+					<div class={`card ${c.tier}${c.blank ? ' blank' : ''}`} data-id={c.id} data-href={c.href} data-tier={c.tier} style={`--hue:${c.hue}`}>
+						<div class="inner">
+							<div class="face front">
+								<div class="art">{!c.blank && <svg viewBox="0 0 200 92" preserveAspectRatio="none">
+									<filter id={`f-${c.seed}`}><feTurbulence type="fractalNoise" baseFrequency="0.007 0.018" numOctaves="2" seed={c.seed} /><feColorMatrix values={`0 0 0 0 ${(0.3 + (c.hue % 7) / 10).toFixed(2)}  0 0 0 0 ${(0.4 + (c.hue % 5) / 10).toFixed(2)}  0 0 0 0 0.95  0 0 0 1.6 -0.3`} /><feComponentTransfer><feFuncA type="discrete" tableValues="0 .3 .6 1" /></feComponentTransfer></filter>
+									<rect width="200" height="92" filter={`url(#f-${c.seed})`} />
+								</svg>}</div>
+								<div class="t">{c.title}</div>
+								<div class="m"><span>{c.date}</span><span>{c.blank ? '' : `${c.min}분 · ${c.chars.toLocaleString()}자`}</span></div>
+								<div class="r">{c.tier} · {tierName[c.tier]}</div>
+								<div class="n">{c.category}</div>
+								<div class="shine"></div><div class="glare"></div>
+							</div>
+							<div class="face back">easyho</div>
+						</div>
+					</div>
+				))}
+			</template>
+			<div class="fx" id="fx"></div>
 		</main>
 		<Footer />
-		<script>
-			const pack = document.getElementById('pack')!, hand = document.getElementById('hand')!, hint = document.getElementById('hint')!;
-			const cards = [...document.querySelectorAll<HTMLElement>('.card')];
+		<script define:vars={{ packs: packs.map((p) => ({ cat: p.cat, hue: p.hue, ids: p.cards.map((c) => c.id) })) }}>
+			const $ = (id) => document.getElementById(id);
+			const shelf = $('shelf'), stage = $('stage'), opening = $('opening'), deck = $('deck'), row = $('row'), hint = $('hint'), fx = $('fx'), reset = $('reset');
+			const tpl = $('tpl').content;
 			const KEY = 'easyho.cards';
-			const got = new Set<string>(JSON.parse(localStorage.getItem(KEY) || '[]'));
-			const count = () => { document.getElementById('colcount')!.textContent = `컬렉션 ${got.size} / ${cards.length}`; };
+			const got = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
+			const total = [...tpl.querySelectorAll('.card:not(.blank)')].length;
+			const count = () => { $('colcount').textContent = `컬렉션 ${got.size} / ${total}`; };
 			count();
-			let opened = false;
-			function open() {
-				if (opened) return; opened = true;
-				pack.classList.add('open');
-				hint.textContent = '카드를 누르면 글이 열린다';
-				cards.forEach((c, i) => {
-					setTimeout(() => c.classList.add('in'), 500 + i * 220);
-					setTimeout(() => { c.classList.add('flip'); got.add(c.dataset.id!); localStorage.setItem(KEY, JSON.stringify([...got])); count(); }, 1100 + i * 320);
-				});
+			const RANK = { C: 0, U: 1, R: 2, SR: 3, UR: 4 };
+
+			// 소리: 파일 없이 합성
+			let ac;
+			function tone(f, t0, dur, type = 'sine', g = 0.08) { const o = ac.createOscillator(), v = ac.createGain(); o.type = type; o.frequency.value = f; v.gain.setValueAtTime(0, t0); v.gain.linearRampToValueAtTime(g, t0 + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(v).connect(ac.destination); o.start(t0); o.stop(t0 + dur); }
+			function sfx(kind) {
+				try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
+				const t = ac.currentTime;
+				if (kind === 'tear') { const b = ac.createBuffer(1, ac.sampleRate * 0.4, ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2); const s = ac.createBufferSource(), v = ac.createGain(), f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2500; s.buffer = b; v.gain.value = 0.25; s.connect(f).connect(v).connect(ac.destination); s.start(t); }
+				if (kind === 'flip') tone(900, t, 0.08, 'triangle', 0.05);
+				if (kind === 'rare') [523, 659, 784].forEach((f, i) => tone(f, t + i * 0.08, 0.5, 'triangle'));
+				if (kind === 'sr') [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, t + i * 0.09, 0.9, 'triangle', 0.1));
+				if (kind === 'ur') { [523, 659, 784, 1047, 1319, 1568, 2093].forEach((f, i) => tone(f, t + i * 0.07, 1.4, 'triangle', 0.1)); tone(130, t, 1.6, 'sawtooth', 0.06); }
+				if (kind === 'charge') { for (let i = 0; i < 12; i++) tone(300 + i * 90, t + i * 0.12, 0.2, 'sine', 0.04); }
 			}
-			pack.addEventListener('click', open);
-			document.getElementById('reset')!.addEventListener('click', () => { opened = false; pack.classList.remove('open'); cards.forEach((c) => c.classList.remove('in', 'flip')); hint.textContent = '팩을 눌러서 뜯기'; });
-			// 기울임 + 포일 위치
-			function tilt(c: HTMLElement, nx: number, ny: number, on: boolean) {
+
+			function tilt(c, nx, ny, on) {
 				c.style.setProperty('--rx', `${(-ny * 14).toFixed(2)}deg`); c.style.setProperty('--ry', `${(nx * 16).toFixed(2)}deg`);
 				c.style.setProperty('--px', `${(50 + nx * 50).toFixed(1)}%`); c.style.setProperty('--py', `${(50 + ny * 50).toFixed(1)}%`);
 				c.style.setProperty('--o', on ? '1' : '0');
 			}
-			cards.forEach((c) => {
+			function wire(c) {
 				c.addEventListener('pointermove', (e) => { const r = c.getBoundingClientRect(); tilt(c, ((e.clientX - r.left) / r.width - 0.5) * 2, ((e.clientY - r.top) / r.height - 0.5) * 2, true); });
 				c.addEventListener('pointerleave', () => tilt(c, 0, 0, false));
-				c.addEventListener('click', () => { if (c.classList.contains('flip')) location.href = c.dataset.href!; });
-			});
-			// 폰: 기울기 센서
-			function gyro(e: DeviceOrientationEvent) { const nx = Math.max(-1, Math.min(1, (e.gamma ?? 0) / 30)), ny = Math.max(-1, Math.min(1, ((e.beta ?? 45) - 45) / 30)); cards.forEach((c) => tilt(c, nx, ny, true)); }
-			if (matchMedia('(pointer: coarse)').matches && 'DeviceOrientationEvent' in window) {
-				const D = DeviceOrientationEvent as any;
-				if (typeof D.requestPermission === 'function') pack.addEventListener('click', () => D.requestPermission().then((s: string) => s === 'granted' && addEventListener('deviceorientation', gyro)), { once: true });
+				c.addEventListener('click', () => { if (c.classList.contains('flip') && c.dataset.href) location.href = c.dataset.href; });
+			}
+			function burst(tier) {
+				const colors = tier === 'UR' ? ['#f0abfc', '#93c5fd', '#a7f3d0', '#fde68a', '#fff'] : ['#fde68a', '#fbbf24', '#fff'];
+				fx.innerHTML = '';
+				const fl = document.createElement('div'); fl.className = 'flash'; fx.appendChild(fl);
+				const n = tier === 'UR' ? 70 : 40;
+				for (let i = 0; i < n; i++) { const s = document.createElement('i'); s.className = 'spark'; const a = Math.random() * Math.PI * 2, d = 120 + Math.random() * (tier === 'UR' ? 520 : 360); s.style.setProperty('--dx', `${Math.cos(a) * d}px`); s.style.setProperty('--dy', `${Math.sin(a) * d}px`); s.style.setProperty('--c', colors[i % colors.length]); s.style.width = s.style.height = `${4 + Math.random() * 8}px`; fx.appendChild(s); }
+				const b = document.createElement('div'); b.className = 'banner'; b.textContent = tier === 'UR' ? 'ULTRA RARE!!' : 'SUPER RARE!'; fx.appendChild(b);
+				document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 500);
+				setTimeout(() => (fx.innerHTML = ''), 1600);
+			}
+
+			let cards = [], busy = false;
+			function openPack(i) {
+				const p = packs[i];
+				shelf.classList.add('off'); stage.classList.add('on'); reset.hidden = false;
+				opening.hidden = false; opening.style.setProperty('--h', p.hue);
+				opening.querySelector('.body').style.animation = 'none'; opening.querySelector('.tear').style.animation = 'none';
+				void opening.offsetWidth; opening.querySelector('.body').style.animation = ''; opening.querySelector('.tear').style.animation = '';
+				sfx('tear');
+				hint.textContent = '';
+				deck.innerHTML = ''; row.innerHTML = '';
+				cards = p.ids.map((id) => tpl.querySelector(`[data-id="${id}"]`).cloneNode(true));
+				setTimeout(() => {
+					opening.hidden = true;
+					// 뭉치: 맨 뒤(높은 등급)가 DOM 앞. 맨 위 카드 = 마지막 자식
+					[...cards].reverse().forEach((c) => { c.classList.add('c'); deck.appendChild(c); });
+					arm();
+				}, 1000);
+			}
+			function arm() {
+				const top = deck.lastElementChild;
+				if (!top) { hint.textContent = '다 뜯었다. 카드를 누르면 글이 열린다'; return; }
+				top.classList.add('top');
+				const left = deck.children.length;
+				hint.textContent = left === 1 ? '마지막 한 장' : `탭해서 넘기기 · ${left}장 남음`;
+				top.addEventListener('click', () => reveal(top), { once: true });
+			}
+			function reveal(c) {
+				if (busy) return; busy = true;
+				const tier = c.dataset.tier, last = deck.children.length === 1;
+				const finish = () => {
+					c.classList.remove('top', 'peek', 'c'); c.style.translate = '';
+					row.appendChild(c); c.classList.add('flip'); wire(c);
+					if (c.dataset.href) { got.add(c.dataset.id); localStorage.setItem(KEY, JSON.stringify([...got])); count(); }
+					if (RANK[tier] >= 3) { setTimeout(() => { burst(tier); sfx(tier.toLowerCase()); }, 350); }
+					else if (tier === 'R') sfx('rare'); else sfx('flip');
+					setTimeout(() => { busy = false; arm(); }, RANK[tier] >= 3 ? 1500 : 450);
+				};
+				if (last && RANK[tier] >= 3) { c.classList.add('peek'); sfx('charge'); setTimeout(finish, 1700); }
+				else finish();
+			}
+			document.querySelectorAll('.pack').forEach((p) => p.addEventListener('click', () => openPack(+p.dataset.i)));
+			reset.addEventListener('click', () => { stage.classList.remove('on'); shelf.classList.remove('off'); reset.hidden = true; hint.textContent = '팩을 골라서 뜯기'; });
+			// 폰 기울기
+			function gyro(e) { const nx = Math.max(-1, Math.min(1, (e.gamma ?? 0) / 30)), ny = Math.max(-1, Math.min(1, ((e.beta ?? 45) - 45) / 30)); row.querySelectorAll('.card').forEach((c) => tilt(c, nx, ny, true)); }
+			if (matchMedia('(pointer: coarse)').matches && window.DeviceOrientationEvent) {
+				const D = window.DeviceOrientationEvent;
+				if (typeof D.requestPermission === 'function') shelf.addEventListener('click', () => D.requestPermission().then((s) => s === 'granted' && addEventListener('deviceorientation', gyro)).catch(() => {}), { once: true });
 				else addEventListener('deviceorientation', gyro);
 			}
 		</script>

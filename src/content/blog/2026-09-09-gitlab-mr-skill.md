@@ -1,4 +1,5 @@
 ---
+category: 'Claude Code'
 title: 'MR 설명 쓰기 귀찮아서 자동화했다'
 description: 'git diff 읽어서 팀 MR 템플릿 채워주는 Claude Code 스킬. 리뷰 포인트까지 뽑아주는 게 핵심.'
 pubDate: '2026-09-09'

@@ -14,6 +14,8 @@ const blog = defineCollection({
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
+			category: z.string().default('기타'),
+			grade: z.enum(['C', 'U', 'R', 'SR', 'UR']).optional(),
 		}),
 });
 

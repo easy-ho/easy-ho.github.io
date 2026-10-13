@@ -1,4 +1,5 @@
 ---
+category: '인프라'
 title: 'Deployment에 붙어 있던 정체불명의 어노테이션'
 description: 'Rancher에서 본 schedule-actions 어노테이션의 정체는 kube-schedule-scaler. HPA min/max를 크론으로 바꾸는 방식이라 확인할 함정이 네 개 있다.'
 pubDate: '2026-09-12'

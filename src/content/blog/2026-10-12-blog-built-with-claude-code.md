@@ -1,4 +1,5 @@
 ---
+category: 'Claude Code'
 title: '블로그를 하루 만에 만들었다'
 description: 'Astro + GitHub Pages로 블로그 세팅한 기록. 업무 계정이랑 섞이지 않게 분리하는 게 제일 신경 쓰였다.'
 pubDate: '2026-10-12'
