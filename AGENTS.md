@@ -34,4 +34,7 @@ Consult these guides before working on related tasks:
   </figure>
   ```
 - 회사 서비스명·내부 URL·수치·사람 이름은 싣지 않는다. 기술 내용만 익명화해서 쓴다.
+- 말투: 반말 일기체("~했다", "~더라", "~인 듯"). 1인칭, 짧은 문장. "~습니다"체 금지.
+- Claude는 도구로만 가볍게 언급한다. "Claude가 ~했습니다" 식 3인칭 서술 금지. 내가 한 작업이 주인공.
+- 디자인: 미니멀 텍스트 중심. 본문 폭 660px, Pretendard, 장식 없음. 카드·히어로 이미지·그라데이션 추가 금지.
 - 커밋은 이 저장소의 로컬 git 설정(EasyHo / dev.easyho@gmail.com)으로만 한다. 전역 설정을 바꾸지 않는다.

@@ -1,49 +1,36 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { getCollection } from 'astro:content';
 
 const posts = (await getCollection('blog'))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-	.slice(0, 5);
+	.slice(0, 10);
 ---
 
 <!doctype html>
 <html lang="ko">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			ul { list-style: none; padding: 0; }
-			li { margin: 1.25em 0; }
-			li a { text-decoration: none; }
-			.date { color: rgb(var(--gray)); font-size: 0.9em; margin: 0; }
-			.desc { margin: 0.25em 0 0; color: rgb(var(--gray-dark)); }
-		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<h1>easyho.log</h1>
-			<p>
-				백엔드 개발자의 작업 기록입니다. Claude Code 세션에서 실제로 했던 작업을 바탕으로
-				삽질, 설계, 자동화 이야기를 정리합니다.
+			<p class="muted">
+				백엔드 개발자. 일하면서 겪은 삽질, 설계, 자동화 이야기를 적는다.
+				대부분 Claude Code로 작업하다 남긴 기록에서 출발한 글들.
 			</p>
-			<h2>최근 글</h2>
-			<ul>
+			<ul class="post-list">
 				{posts.map((post) => (
 					<li>
-						<a href={`/blog/${post.id}/`}>
-							<p class="date"><FormattedDate date={post.data.pubDate} /></p>
-							<h4 style="margin:0">{post.data.title}</h4>
-							<p class="desc">{post.data.description}</p>
-						</a>
+						<FormattedDate date={post.data.pubDate} />
+						<a href={`/blog/${post.id}/`}>{post.data.title}</a>
 					</li>
 				))}
 			</ul>
-			<p><a href="/blog">전체 글 보기 →</a></p>
 		</main>
 		<Footer />
 	</body>
