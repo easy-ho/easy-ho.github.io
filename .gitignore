@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# 비공개 초안 (공개 저장소에 올리지 않음)
+drafts/

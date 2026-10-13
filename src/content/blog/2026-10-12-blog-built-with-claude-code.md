@@ -4,10 +4,10 @@ description: 'Astro + GitHub Pages로 블로그 세팅한 기록. 업무 계정�
 pubDate: '2026-10-12'
 ---
 
-<figure class="post-img">
-  <img src="/images/hero-terminal-sprout.svg" alt="터미널에서 블로그가 자라나는 느낌의 일러스트" loading="lazy" />
-  <figcaption>터미널에서 블로그가 자라나는 느낌의 일러스트<details><summary>프롬프트</summary>A minimalist flat illustration of a dark terminal window on a desk, with a small plant sprouting out of the cursor line and growing into a tiny website page with a header and three post cards. Soft pastel palette, clean vector style, no text, 16:9.</details></figcaption>
-  <!-- IMAGE: hero-terminal-sprout.svg -->
+<figure class="img-placeholder">
+  <p><strong>이미지 #1</strong> — 터미널에서 블로그가 자라나는 느낌의 일러스트</p>
+  <p><strong>프롬프트:</strong> A minimalist flat illustration of a dark terminal window on a desk, with a small plant sprouting out of the cursor line and growing into a tiny website page with a header and three post cards. Soft pastel palette, clean vector style, no text, 16:9.</p>
+  <!-- IMAGE: hero-terminal-sprout.png -->
 </figure>
 
 예전부터 블로그 하나 있어야지 생각만 하고 있었다. 매번 "뭘로 만들지"에서 막혔다. Jekyll? Hugo? 테마 고르다가 지쳐서 끝. 이번엔 그냥 Claude Code 켜놓고 "블로그 만들어줘"라고 했다. 하루 만에 끝났다.
@@ -38,10 +38,10 @@ git config credential.helper "!gh auth git-credential"
 
 gh CLI 자격증명도 이 저장소의 credential helper로만 연결. 회사 저장소는 전부 사내 GitLab이라 호스트가 달라서 애초에 겹칠 일이 없긴 한데, 그래도 확실히 해두는 게 마음 편하다.
 
-<figure class="post-img">
-  <img src="/images/account-separation.svg" alt="두 개의 계정이 서로 다른 문으로 들어가는 분리 개념도" loading="lazy" />
-  <figcaption>두 개의 계정이 서로 다른 문으로 들어가는 분리 개념도<details><summary>프롬프트</summary>Simple diagram-style illustration: two doors side by side on a flat wall, left door with a briefcase icon leading to an orange fox silhouette, right door with a house icon leading to a black cat silhouette. A clear vertical divider between them. Flat vector, muted colors, no readable text.</details></figcaption>
-  <!-- IMAGE: account-separation.svg -->
+<figure class="img-placeholder">
+  <p><strong>이미지 #2</strong> — 두 개의 계정이 서로 다른 문으로 들어가는 분리 개념도</p>
+  <p><strong>프롬프트:</strong> Simple diagram-style illustration: two doors side by side on a flat wall, left door with a briefcase icon leading to an orange fox silhouette, right door with a house icon leading to a black cat silhouette. A clear vertical divider between them. Flat vector, muted colors, no readable text.</p>
+  <!-- IMAGE: account-separation.png -->
 </figure>
 
 ## gh 로그인에서 삽질
@@ -79,14 +79,14 @@ gh auth login -h github.com -p https -w -s workflow
 
 글에 그림을 넣고 싶은데 지금 당장 만들 시간은 없다. 그래서 자리만 비워두고 프롬프트를 적어두기로 했다. 이 글 위아래에 있는 점선 박스가 그거다. 나중에 이미지 생성해서 채우면 된다. 배포된 사이트에서도 보이게 둔 건 의도한 거다. 어디가 비었는지 바로 보이니까.
 
-<figure class="post-img">
-  <img src="/images/session-sieve.svg" alt="수많은 세션 로그 중 몇 개만 골라내는 체 모양의 개념도" loading="lazy" />
-  <figcaption>수많은 세션 로그 중 몇 개만 골라내는 체 모양의 개념도<details><summary>프롬프트</summary>Flat illustration of a funnel or sieve: many small gray document icons pouring in from the top, only three glowing document icons coming out the bottom onto a small notebook. Clean vector style, soft blue and amber accents, no text.</details></figcaption>
-  <!-- IMAGE: session-sieve.svg -->
+<figure class="img-placeholder">
+  <p><strong>이미지 #3</strong> — 수많은 세션 로그 중 몇 개만 골라내는 체 모양의 개념도</p>
+  <p><strong>프롬프트:</strong> Flat illustration of a funnel or sieve: many small gray document icons pouring in from the top, only three glowing document icons coming out the bottom onto a small notebook. Clean vector style, soft blue and amber accents, no text.</p>
+  <!-- IMAGE: session-sieve.png -->
 </figure>
 
 ## 글감
 
-Claude Code 세션 로그가 수십 개 쌓여 있어서, 거기서 다시 봐도 쓸모 있을 것만 골랐다. 회사 서비스명이나 내부 URL, 사람 이름이 섞인 건 빼거나 기법만 추렸다. 첫 글 세 개가 그렇게 나왔다.
+최근 몇 달 작업 메모에서 다시 봐도 쓸모 있을 것만 골랐다. 회사 관련 내용은 뺐다.
 
 다음 할 일은 이 글의 이미지 세 개 채우기.

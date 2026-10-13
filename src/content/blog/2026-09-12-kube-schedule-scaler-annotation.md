@@ -4,13 +4,13 @@ description: 'Rancher에서 본 schedule-actions 어노테이션의 정체는 ku
 pubDate: '2026-09-12'
 ---
 
-<figure class="post-img">
-  <img src="/images/schedule-scaler-hero.svg" alt="시계와 파드 개수가 연결된 스케줄 스케일링 개념" loading="lazy" />
-  <figcaption>시계와 파드 개수가 연결된 스케줄 스케일링 개념<details><summary>프롬프트</summary>Flat vector illustration of an analog clock on the left, with three arrows at different hour marks pointing right toward stacks of small hexagonal pods that grow in height from 2 to 7 to 10 and then shrink back. Soft blue and gray palette, white background, no readable text, 16:9.</details></figcaption>
-  <!-- IMAGE: schedule-scaler-hero.svg -->
+<figure class="img-placeholder">
+  <p><strong>이미지 #1</strong> — 시계와 파드 개수가 연결된 스케줄 스케일링 개념</p>
+  <p><strong>프롬프트:</strong> Flat vector illustration of an analog clock on the left, with three arrows at different hour marks pointing right toward stacks of small hexagonal pods that grow in height from 2 to 7 to 10 and then shrink back. Soft blue and gray palette, white background, no readable text, 16:9.</p>
+  <!-- IMAGE: schedule-scaler-hero.png -->
 </figure>
 
-라이브 이벤트 전에 운영 Deployment를 Rancher에서 보다가 처음 보는 어노테이션을 발견했다. Rancher 기능인지, 누가 손으로 넣은 건지 모르겠어서 YAML 통째로 Claude Code에 붙여넣고 "이게 뭐냐"고 물어봤다.
+라이브 이벤트 전에 운영 Deployment를 Rancher에서 보다가 처음 보는 어노테이션을 발견했다. Rancher 기능인지, 누가 손으로 넣은 건지 모르겠어서 출처부터 찾아봤다.
 
 ## 정체: kube-schedule-scaler
 
@@ -34,15 +34,15 @@ Rancher 기능이 아니라 클러스터에 깔린 **kube-schedule-scaler**(zala
 
 12:30 이후엔 HPA 축소 안정화 시간(기본 5분) 지나고 CPU 내려가는 만큼 줄어서 결국 2개로.
 
-<figure class="post-img">
-  <img src="/images/hpa-range-steps.svg" alt="시간축에 따라 HPA min/max 범위가 계단식으로 바뀌는 그래프" loading="lazy" />
-  <figcaption>시간축에 따라 HPA min/max 범위가 계단식으로 바뀌는 그래프<details><summary>프롬프트</summary>Minimal line chart illustration: x-axis is time, a shaded band shows a min/max range that steps up twice in the evening and then drops back, with a thin line inside the band representing actual pod count following the lower bound. Flat design, blue band, white background, no readable axis labels.</details></figcaption>
-  <!-- IMAGE: hpa-range-steps.svg -->
+<figure class="img-placeholder">
+  <p><strong>이미지 #2</strong> — 시간축에 따라 HPA min/max 범위가 계단식으로 바뀌는 그래프</p>
+  <p><strong>프롬프트:</strong> Minimal line chart illustration: x-axis is time, a shaded band shows a min/max range that steps up twice in the evening and then drops back, with a thin line inside the band representing actual pod count following the lower bound. Flat design, blue band, white background, no readable axis labels.</p>
+  <!-- IMAGE: hpa-range-steps.png -->
 </figure>
 
 ## 확인해야 할 함정 네 개
 
-답변 끝에 붙어 있던 "확인 필요" 목록이 사실 제일 쓸모 있었다.
+정체를 아는 것보다 아래 네 가지를 확인하는 게 사실 더 중요했다.
 
 1. **같은 이름의 HPA가 있어야 동작한다.** 어노테이션만 있고 HPA 없으면 아무 일도 안 일어난다. managedFields에 kube-controller-manager가 scale 서브리소스로 replicas 갱신한 흔적이 있어서 HPA는 있는 것 같았는데, 직접 확인은 안 한 상태.
 2. **시간대는 스케일러 배포의 TZ에 달렸다.** UTC라고 단정하면 안 된다. 9시간 틀리면 이벤트 끝나고 늘어난다.
@@ -53,4 +53,4 @@ Rancher 기능이 아니라 클러스터에 깔린 **kube-schedule-scaler**(zala
 
 - 어노테이션 기반 설정은 "누가 읽는지"부터 찾는다. 이번엔 zalando-incubator의 kube-schedule-scaler.
 - HPA 범위를 조정하는 방식이니까 **HPA 존재 / TZ / 원복 항목 / 노드 용량** 네 개를 세트로 확인.
-- YAML 통째로 붙여넣고 묻는 게 생각보다 효율 좋다. 모르는 어노테이션 출처를 검색으로 찾는 것보다 빨랐고, "확인 필요" 목록까지 같이 나왔다.
+- 모르는 어노테이션은 키 이름으로 검색하면 금방 나온다. 정체보다 그 뒤에 따라오는 확인 항목이 진짜 일이다.

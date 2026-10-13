@@ -96,10 +96,3 @@ th { font-weight: 650; color: var(--muted); font-size: 0.9em; }
 	.post-list li { flex-direction: column; gap: 0.1em; }
 }
 
-/* 본문 이미지 + 접힌 프롬프트 */
-.post-img { margin: 2em 0; }
-.post-img img { display: block; width: 100%; border: 1px solid var(--line); border-radius: 6px; }
-.post-img figcaption { margin-top: 0.5em; color: var(--muted); font-size: 0.85em; line-height: 1.5; }
-.post-img details { display: inline; margin-left: 0.4em; }
-.post-img summary { display: inline; cursor: pointer; color: var(--muted); text-decoration: underline dotted; text-underline-offset: 3px; }
-.post-img details[open] summary::after { content: ': '; }
