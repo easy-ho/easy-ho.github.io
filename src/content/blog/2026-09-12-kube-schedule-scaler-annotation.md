@@ -4,10 +4,10 @@ description: 'Rancher에서 본 schedule-actions 어노테이션의 정체는 ku
 pubDate: '2026-09-12'
 ---
 
-<figure class="img-placeholder">
-  <p><strong>이미지 #1</strong> — 시계와 파드 개수가 연결된 스케줄 스케일링 개념</p>
-  <p><strong>프롬프트:</strong> Flat vector illustration of an analog clock on the left, with three arrows at different hour marks pointing right toward stacks of small hexagonal pods that grow in height from 2 to 7 to 10 and then shrink back. Soft blue and gray palette, white background, no readable text, 16:9.</p>
-  <!-- IMAGE: schedule-scaler-hero.png -->
+<figure class="post-img">
+  <img src="/images/schedule-scaler-hero.svg" alt="시계와 파드 개수가 연결된 스케줄 스케일링 개념" loading="lazy" />
+  <figcaption>시계와 파드 개수가 연결된 스케줄 스케일링 개념<details><summary>프롬프트</summary>Flat vector illustration of an analog clock on the left, with three arrows at different hour marks pointing right toward stacks of small hexagonal pods that grow in height from 2 to 7 to 10 and then shrink back. Soft blue and gray palette, white background, no readable text, 16:9.</details></figcaption>
+  <!-- IMAGE: schedule-scaler-hero.svg -->
 </figure>
 
 라이브 이벤트 전에 운영 Deployment를 Rancher에서 보다가 처음 보는 어노테이션을 발견했다. Rancher 기능인지, 누가 손으로 넣은 건지 모르겠어서 YAML 통째로 Claude Code에 붙여넣고 "이게 뭐냐"고 물어봤다.
@@ -34,10 +34,10 @@ Rancher 기능이 아니라 클러스터에 깔린 **kube-schedule-scaler**(zala
 
 12:30 이후엔 HPA 축소 안정화 시간(기본 5분) 지나고 CPU 내려가는 만큼 줄어서 결국 2개로.
 
-<figure class="img-placeholder">
-  <p><strong>이미지 #2</strong> — 시간축에 따라 HPA min/max 범위가 계단식으로 바뀌는 그래프</p>
-  <p><strong>프롬프트:</strong> Minimal line chart illustration: x-axis is time, a shaded band shows a min/max range that steps up twice in the evening and then drops back, with a thin line inside the band representing actual pod count following the lower bound. Flat design, blue band, white background, no readable axis labels.</p>
-  <!-- IMAGE: hpa-range-steps.png -->
+<figure class="post-img">
+  <img src="/images/hpa-range-steps.svg" alt="시간축에 따라 HPA min/max 범위가 계단식으로 바뀌는 그래프" loading="lazy" />
+  <figcaption>시간축에 따라 HPA min/max 범위가 계단식으로 바뀌는 그래프<details><summary>프롬프트</summary>Minimal line chart illustration: x-axis is time, a shaded band shows a min/max range that steps up twice in the evening and then drops back, with a thin line inside the band representing actual pod count following the lower bound. Flat design, blue band, white background, no readable axis labels.</details></figcaption>
+  <!-- IMAGE: hpa-range-steps.svg -->
 </figure>
 
 ## 확인해야 할 함정 네 개

@@ -25,7 +25,15 @@ Consult these guides before working on related tasks:
 
 - 블로그 이름/소개/GitHub 링크는 `src/consts.ts` 한 곳에서만 바꾼다.
 - 포스트는 `src/content/blog/YYYY-MM-DD-slug.md`. frontmatter는 `title`, `description`, `pubDate` 필수.
-- 이미지 자리는 아래 블록으로 비워두고, 이미지가 생기면 `![설명](/images/파일명.png)`으로 교체한다.
+- 이미지는 `public/images/*.svg`에 두고 `.post-img` figure로 넣는다. 프롬프트는 figcaption 안 `<details>`에 남긴다(지우지 않는다).
+  ```html
+  <figure class="post-img">
+    <img src="/images/파일명.svg" alt="한 줄 설명" loading="lazy" />
+    <figcaption>한 줄 설명<details><summary>프롬프트</summary>영어 생성 프롬프트</details></figcaption>
+    <!-- IMAGE: 파일명.svg -->
+  </figure>
+  ```
+- 아직 이미지가 없는 자리는 아래 블록으로 비워둔다.
   ```html
   <figure class="img-placeholder">
     <p><strong>🖼️ 이미지 자리 #N</strong> — 한 줄 설명</p>
