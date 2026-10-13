@@ -1,0 +1,88 @@
+---
+title: '리포 30개를 한 번에 훑어본 날'
+description: '서브에이전트 병렬로 레거시 백엔드 전체 돌려보기. 결과보다 "어떤 관점으로 다시 물었나"가 더 중요했다.'
+pubDate: '2026-09-04'
+---
+
+<figure class="img-placeholder">
+  <p><strong>이미지 #1</strong> — 수십 개의 작은 로봇이 각자 다른 책을 동시에 읽는 장면</p>
+  <p><strong>프롬프트:</strong> Isometric flat illustration of a long library table with about thirty tiny identical robots, each reading a different thick book, and one larger robot at the head of the table collecting notes into a single report. Warm wood tones, soft blue robots, no readable text, 16:9.</p>
+  <!-- IMAGE: parallel-agents-library.png -->
+</figure>
+
+워크스페이스에 백엔드 리포가 30개 가까이 있다. 게이트웨이, 인증, 결제, 추천, 푸시, 배치, ETL. 내가 다 짠 것도 아니고, 담당자 바뀌면서 전체 그림 아는 사람이 없는 상태.
+
+"이 중에 손볼 게 뭔지 한 번에 보고 싶다"는 생각으로 Claude Code에 던져봤다. 이 글은 결과 목록이 아니라 **방법이랑 거기서 배운 것** 기록이다. 구체적인 취약점이나 서비스 이름은 당연히 안 쓴다.
+
+## 리포 하나당 에이전트 하나
+
+```
+워크스페이스 안의 백엔드 프로젝트들을 각각 서브에이전트로 병렬 분석해서
+개선점 Top 10 뽑아줘
+```
+
+이렇게 하니까 리포 목록 뽑고, 리포마다 서브에이전트 하나씩 띄웠다. 각 에이전트는 자기 리포만 읽고 발견한 걸 `파일:라인` 근거랑 같이 보고. 메인 세션이 그걸 모아서 교차 이슈 묶고 우선순위 매김.
+
+이 구조가 좋은 이유:
+
+- **컨텍스트 격리.** 리포 30개를 한 세션에 다 넣으면 터진다. 에이전트 하나는 리포 하나만.
+- **교차 이슈가 보인다.** 보고서 30개를 나란히 놓으니까 "HTTP 클라이언트 타임아웃 없는 리포가 n개" 같은, 한 리포만 봐서는 절대 안 보이는 패턴이 드러난다.
+- **근거 강제.** 처음부터 "파일:라인 없는 주장은 버려"라고 못박았다. 그래야 나중에 내가 검증할 수 있다.
+
+<figure class="img-placeholder">
+  <p><strong>이미지 #2</strong> — 메인 세션이 서브에이전트들의 보고서를 모아 겹치는 패턴을 찾는 구조도</p>
+  <p><strong>프롬프트:</strong> Clean diagram illustration: one large node at the top connected by thin lines to many small nodes below, each small node holding a tiny document; several documents are highlighted in the same amber color to show a repeated pattern. Flat vector, white background, no readable text.</p>
+  <!-- IMAGE: fan-out-fan-in.png -->
+</figure>
+
+## 1차: 다 맞는 말인데 와닿지가 않았다
+
+1차 Top 10은 "코드 안정성" 관점이었다. 타임아웃 부재, CI에서 테스트 생략, 선언만 돼 있고 실제로 안 쓰이는 커넥션 풀.
+
+전부 고쳐야 할 거 맞다. 근데 읽고 든 생각은 "그래서 **독자**한테 뭐가 달라지는데?"였다. 콘텐츠 플랫폼 백엔드 하는 입장에서, 최종 사용자가 체감하는 걸로 우선순위 매기고 싶었다.
+
+## 2차: 질문을 바꿨다
+
+```
+1차는 코드 안정성 위주였어. 이번엔 적용했을 때
+사용자가 체감하는 개선 관점으로 다시 분석해줘
+```
+
+같은 코드, 같은 구조, 질문만 바꿈. 완전히 다른 목록이 나왔다.
+
+- 캐시 미스 때 락 대기가 십수 초까지 늘어나는 게이트웨이 경로
+- 외부 IdP 호출에 타임아웃이 없어서 소셜 로그인이 무한정 늘어지는 구간
+- 결제 흐름 안에서 동기로 날아가는 분석 이벤트 전송
+- 실패한 결제의 락이 TTL 동안 안 풀려서 재시도가 거부되는 문제
+- 대기열 브로드캐스트 주기랑 진입 스케줄러 주기가 안 맞아서 "멈춘 것 같은" 체감
+
+1차엔 없거나 밑에 있던 것들. **도구는 같은데 관점이 결과를 결정**했다.
+
+## 3차, 4차: 관점을 더 쪼갰다
+
+재미 붙어서 두 번 더 돌렸다.
+
+- **3차**: 웹 프론트에서 역추적. "프론트의 어떤 UX 문제가 백엔드 어디서 비롯되나." 그리고 랭킹·검색 인덱스·ETL 쪽 데이터 신선도 지연 원인.
+- **4차**: 5개 축으로 재정리. 인가 결함 / 배포 복원력 / 비용 / 중복 코드 / 운영자 도구.
+
+4차에서 특히 **중복 축**이 쓸모 있었다. 같은 외부 API 클라이언트가 9벌, 같은 JWT 설정이 8벌, Slack 알림 코드가 8벌. 일부는 오타까지 그대로 복사돼 있었다. 리포 하나만 보면 절대 모른다.
+
+<figure class="img-placeholder">
+  <p><strong>이미지 #3</strong> — 같은 분석 대상을 네 가지 다른 렌즈로 보는 개념도</p>
+  <p><strong>프롬프트:</strong> Flat illustration of a single gray cube in the center, viewed through four different colored magnifying glasses arranged around it (blue, amber, green, red), each lens showing a slightly different highlighted facet of the cube. Minimal vector style, light background, no readable text.</p>
+  <!-- IMAGE: four-lenses.png -->
+</figure>
+
+## 배운 것
+
+**첫 결과는 거의 항상 "기본 관점"이다.** 관점 안 주면 코드 품질·보안 같은 일반론으로 간다. 틀린 게 아니라 내가 원하는 축이 아닐 뿐. 관점 명시하고 다시 묻는 비용은 아주 싸고 결과 차이는 크다.
+
+**근거 강제가 신뢰도를 만든다.** `파일:라인` 붙은 항목은 바로 열어서 확인했고, 실제로 몇 개는 오탐이었다. 근거 없었으면 오탐을 거를 방법이 없었다.
+
+**정적 분석의 한계는 분명하다.** 보고서 끝에 붙은 한계 문구가 정확했다. "전부 정적 분석. APM 실측이나 CDN/엣지 동작은 미확인." 예를 들어 "gzip 미설정"은 엣지에서 압축하고 있으면 문제가 아니다. 결과를 바로 티켓으로 만들면 안 되고 실측이랑 대조하는 단계가 필요하다.
+
+**메모리에 남기면 다음 세션이 이어진다.** 분석 결과랑 "이 사람은 사용자 체감 관점을 중시한다"는 걸 메모리 파일로 남겨두니, 며칠 뒤 다른 세션에서 비슷한 요청 했을 때 1차 관점으로 안 돌아갔다.
+
+## 다음
+
+4차 결과 중 몇 개는 실제 티켓이 됐다. 수정 끝나면 "정적 분석 결과 vs 실제 고친 후 변화"를 비교해볼 생각. 그게 이 방법이 진짜 쓸모 있는지 판단할 유일한 기준이니까.
