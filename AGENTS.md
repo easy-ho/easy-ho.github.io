@@ -25,7 +25,7 @@ Consult these guides before working on related tasks:
 
 - 블로그 이름/소개/GitHub 링크는 `src/consts.ts` 한 곳에서만 바꾼다.
 - 포스트는 `src/content/blog/YYYY-MM-DD-slug.md`. frontmatter는 `title`, `description`, `pubDate` 필수.
-- 이미지 자리는 아래 블록으로 비워두고, 이미지가 생기면 `![설명](/images/파일명.png)`으로 교체한다. 프롬프트는 지우지 않는다.
+- 이미지 자리는 아래 블록으로 비워둔다. 이미지가 생기면 원본을 `sips -Z 1320` JPEG(품질 85)로 줄여 `public/images/`에 넣고, placeholder 블록(프롬프트 포함)을 통째로 `![설명](/images/파일명.jpg)`으로 바꾼다.
   ```html
   <figure class="img-placeholder">
     <p><strong>🖼️ 이미지 자리 #N</strong> — 한 줄 설명</p>

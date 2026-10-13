@@ -4,11 +4,7 @@ description: '서브에이전트 병렬로 레거시 백엔드 전체 돌려보�
 pubDate: '2026-09-04'
 ---
 
-<figure class="img-placeholder">
-  <p><strong>이미지 #1</strong> — 수십 개의 작은 로봇이 각자 다른 책을 동시에 읽는 장면</p>
-  <p><strong>프롬프트:</strong> Isometric flat illustration of a long library table with about thirty tiny identical robots, each reading a different thick book, and one larger robot at the head of the table collecting notes into a single report. Warm wood tones, soft blue robots, no readable text, 16:9.</p>
-  <!-- IMAGE: parallel-agents-library.png -->
-</figure>
+![수십 개의 작은 로봇이 각자 다른 책을 동시에 읽는 장면](/images/parallel-agents-library.jpg)
 
 워크스페이스에 백엔드 리포가 30개 가까이 있다. 게이트웨이, 인증, 결제, 추천, 푸시, 배치, ETL. 내가 다 짠 것도 아니고, 담당자 바뀌면서 전체 그림 아는 사람이 없는 상태.
 
@@ -29,11 +25,7 @@ pubDate: '2026-09-04'
 - **교차 이슈가 보인다.** 보고서 30개를 나란히 놓으니까 "HTTP 클라이언트 타임아웃 없는 리포가 n개" 같은, 한 리포만 봐서는 절대 안 보이는 패턴이 드러난다.
 - **근거 강제.** 처음부터 "파일:라인 없는 주장은 버려"라고 못박았다. 그래야 나중에 내가 검증할 수 있다.
 
-<figure class="img-placeholder">
-  <p><strong>이미지 #2</strong> — 메인 세션이 서브에이전트들의 보고서를 모아 겹치는 패턴을 찾는 구조도</p>
-  <p><strong>프롬프트:</strong> Clean diagram illustration: one large node at the top connected by thin lines to many small nodes below, each small node holding a tiny document; several documents are highlighted in the same amber color to show a repeated pattern. Flat vector, white background, no readable text.</p>
-  <!-- IMAGE: fan-out-fan-in.png -->
-</figure>
+![메인 세션이 서브에이전트들의 보고서를 모아 겹치는 패턴을 찾는 구조도](/images/fan-out-fan-in.jpg)
 
 ## 1차: 다 맞는 말인데 와닿지가 않았다
 
@@ -67,11 +59,7 @@ pubDate: '2026-09-04'
 
 4차에서 특히 **중복 축**이 쓸모 있었다. 같은 외부 API 클라이언트가 9벌, 같은 JWT 설정이 8벌, Slack 알림 코드가 8벌. 일부는 오타까지 그대로 복사돼 있었다. 리포 하나만 보면 절대 모른다.
 
-<figure class="img-placeholder">
-  <p><strong>이미지 #3</strong> — 같은 분석 대상을 네 가지 다른 렌즈로 보는 개념도</p>
-  <p><strong>프롬프트:</strong> Flat illustration of a single gray cube in the center, viewed through four different colored magnifying glasses arranged around it (blue, amber, green, red), each lens showing a slightly different highlighted facet of the cube. Minimal vector style, light background, no readable text.</p>
-  <!-- IMAGE: four-lenses.png -->
-</figure>
+![같은 분석 대상을 네 가지 다른 렌즈로 보는 개념도](/images/four-lenses.jpg)
 
 ## 배운 것
 
