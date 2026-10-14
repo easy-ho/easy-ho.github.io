@@ -366,7 +366,16 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				const chime = () => sfx('chime');
 				// 선장 대사: 출항·상륙·편지·완주 때 한 줄. 너무 자주는 안 한다
 				const sayEl = $('say'), sayT = $('sayt'); let sayTimer, sayLast = -9;
-				const LINES = { depart: ['닻 올려. 첫 섬은 여기까지다.'], sail: ['바람 좋다.', '다음 등대를 따라가자.', '해도는 머릿속에 있다.', '조금만 더.'], letter: ['유리병이다. 그때 내가 띄운 거다.', '편지다. 글씨가 많이 번졌네.', '이건 잊고 있었다.'], land: ['닿았다. 등대를 켜자.', '여기다. 닻 내려.', '오래 머문 섬이다.'], revisit: ['돌아왔다. 섬은 그대로네.'], finish: ['여기가 지금이다. 배는 아직 묶여 있다.'], mirage: ['저건 아직 안 잡힌다.'], yard: ['이 배를 지은 곳이다. 혼자 지은 건 아니다.'] };
+				const LINES = {
+					depart: ['닻 올려. 첫 섬이 날 붙잡을 순 없지. 아무도 못 붙잡아. 난 선장이거든.', '자, 출항이다. 지도는 없지만 방향은 있다. 그게 더 중요하지.'],
+					sail: ['바람이 좋군. 바람이 나쁠 때도 난 이렇게 말하지만.', '다음 등대를 따라가면 돼. 등대가 거짓말할 리 없잖아? …아마도.', '해도? 머릿속에 있어. 대부분은.', '이건 다 계획의 일부야. 계획이 뭔지는 가면서 정하지.', '서두르지 마. 바다는 어디 안 가. 우리가 가지.'],
+					letter: ['유리병이군. 누가 띄웠는지 알아? 나야. 취향이 좋았던 거지.', '편지다. 글씨가 번졌군. 바다 탓이야. 내 탓은 아니고.', '이건 잊고 있었는데. 선장도 가끔은 잊지. 중요한 것만.', '병에 넣어 띄우면 언젠가 돌아온다더니. 봐, 돌아왔잖아.'],
+					land: ['닿았다. 봤지? 다 계획대로야.', '등대 켜. 다음에 길 잃을 사람은 내가 아니라도 되니까.', '여기서 꽤 오래 있었지. 떠난 게 아니라 다음으로 간 거야.', '닻 내려. 이 섬은 날 기억할 거야. 아마.'],
+					revisit: ['돌아왔군. 섬은 그대로야. 선장은 좀 늘었고.', '떠났다가 돌아오는 건 패배가 아니야. 항로야.'],
+					finish: ['여기가 지금이야. 배는 묶여 있지만, 묶인 배도 배야.', '끝? 아니. 선장은 끝이라는 말을 안 써. 다음 섬이 있을 뿐.'],
+					mirage: ['저건 안 잡혀. 아직은. 잡힐 때가 되면 저쪽에서 올 거야.', '가까이 가면 멀어지는 섬이라. 내 타입이군.'],
+					yard: ['이 배를 지은 곳이지. 혼자 지은 건 아니야. 혼자 지었다고 하면 멋있긴 한데.', '여기선 두 녀석이 일했어. 하나는 코드를 쓰고, 하나는 그림을 그리고. 난 지시만 했지. 선장답게.'],
+				};
 				function say(kind, force = false) { const now = performance.now() / 1000; if (!force && now - sayLast < 7) return; sayLast = now; const L = LINES[kind]; sayT.textContent = L[Math.floor(Math.random() * L.length)]; sayEl.classList.add('on'); clearTimeout(sayTimer); sayTimer = setTimeout(() => sayEl.classList.remove('on'), 4200); }
 				let toastT;
 				function showToast(k, text) { tk.textContent = k; tt.textContent = text; toast.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), 6500); }
