@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import BaseHead from '../components/BaseHead.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 
@@ -37,8 +38,23 @@ const islands = [
 			{ when: '', name: '그 외', desc: '내서재 리뉴얼, 사전구매 구매 로직, 배치 Airflow 이관, 데이터 카탈로그 구축, 재화 지급 API, 저장소 규칙을 AI가 읽는 형태로 코드화해 팀 공용 스킬로 배포.' },
 		], stack: ['Kotlin', 'WebFlux', 'R2DBC', 'Redis', 'Kafka', 'SQS', 'Kubernetes', 'Airflow', 'Python', 'FastAPI'],
 		posts: ['2026-09-05-fanout-group-channels', '2026-09-10-load-test-bots', '2026-09-22-view-history-sqs', '2026-09-12-kube-schedule-scaler-annotation', '2026-09-04-parallel-subagent-codebase-review', '2026-09-09-gitlab-mr-skill'] },
+	// 조선소: 항로에 없는 섬. 이 배와 바다를 지은 곳. 회사가 아니라 이 블로그의 제작 기록이다.
+	{ id: 'S', x: -6, y: 36, r: 3.2, seed: 11, title: '조선소', date: '2026.10.12 –', role: '이 배와 바다를 지은 곳. 혼자 지은 건 아니다. Claude Code가 설계와 코드를, Codex가 그림을 맡았다. 나는 방향을 정하고, 마음에 안 들면 다시 시켰다.',
+		labels: { works: '건조 기록', stack: '자재', posts: '건조 일지' },
+		works: [
+			{ when: '2026.10.12', name: '블로그 건조', desc: 'Astro로 뼈대를 세우고 GitHub Pages에 올리는 데 한 세션. 첫 배포를 보고 말투와 디자인을 전부 뒤집었다. 미니멀 텍스트, 반말 일기체.' },
+			{ when: '10.13', name: '홈 장치 시제품', desc: '여섯 가지 안을 거쳤다. 1인칭 세계, 입자 4만 개, 구슬 굴리기, 카드팩, 그리고 이 바다. 카드팩과 바다가 남았다.' },
+			{ when: '10.13 – 14', name: '바다', desc: 'WebGL2 셰이더 하나로 물결·안개·등대 불빛·항로를 그린다. 섬·배·유리병은 Codex가 그린 투명 스프라이트를 캔버스로 얹었다. 회사는 섬, 가치관은 편지, 이력은 항로가 됐다.' },
+			{ when: '10.14', name: '글', desc: '지난 작업 세션 기록에서 글감을 추려 썼다. 그림은 글 안에 적어둔 프롬프트로 Codex가 만들고, 스크립트가 그 자리에 끼운다.' },
+			{ when: '', name: '규칙', desc: '저장소 규칙 파일에 말투·익명화·이미지 파이프라인을 적어뒀다. AI가 읽는 문서라 사람이 읽어도 짧다.' },
+		], stack: ['Astro', 'WebGL2', 'Claude Code', 'Codex CLI', 'GitHub Actions', 'Nanum Pen Script'], posts: ['2026-10-12-blog-built-with-claude-code'] },
 ];
+// 조선소 통계: 커밋 수, 그림 수, 건조 일수
+const BUILT_FROM = '2026-10-12';
+let commits = 0; try { commits = Number(execSync('git rev-list --count HEAD', { encoding: 'utf8' }).trim()); } catch {}
+const imageCount = ['public/images', 'public/sea'].reduce((n, d) => n + (existsSync(d) ? readdirSync(d).length : 0), 0);
 const route = ['A', 'B', 'A', 'C', 'D'].map((id) => islands.find((I) => I.id === id)!);
+const yard = islands.find((I) => I.id === 'S')!;
 const cur = route[route.length - 1];
 const SAIL_FROM = '2018-08-01';
 // 유리병 편지 = 그 시절 항로 위에서 쓴 편지. leg = 구간 번호, t = 구간 위 위치, s = 항로에서 옆으로 벗어난 거리.
@@ -59,7 +75,7 @@ const logs = posts.map((p) => {
 });
 const bottles = [...values, ...logs];
 const postTitle = Object.fromEntries(posts.map((p) => [p.id, p.data.title]));
-const islandsOut = islands.map((I) => ({ ...I, posts: I.posts.filter((s) => postTitle[s]).map((s) => ({ title: postTitle[s], href: `/blog/${s}/` })) }));
+const islandsOut = islands.map((I) => ({ ...I, posts: I.posts.filter((s) => postTitle[s]).map((s) => ({ title: postTitle[s], href: `/blog/${s}/` })), note: I === yard ? `커밋 ${commits}개 · 그림 ${imageCount}장 · 글 ${posts.length}편 · 건조 ${Math.max(1, Math.floor((Date.now() - new Date(BUILT_FROM).valueOf()) / 864e5))}일째` : '' }));
 const hasCv = existsSync('public/cv.pdf');
 // 선실에 걸어둘 것. 책은 비워두면 안 보인다.
 const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 같이 만드는 중', 'Kotlin · WebFlux · Redis · Kafka 위에서 실시간 서버를 굴리는 중'] };
@@ -131,6 +147,14 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			.letter .sig { text-align: right; margin-top: 0.8em; opacity: 0.8; }
 			.letter a { display: inline-block; margin-top: 0.6em; color: #7a3b14; font-size: 1.2rem; } .letter a[hidden] { display: none; }
 			.letter .fold { display: block; margin: 1.2em auto 0; background: none; border: 1px solid rgba(42,33,24,0.4); color: #2a2118; border-radius: 999px; padding: 0.35em 1.1em; font-family: var(--mono); font-size: 0.78rem; cursor: pointer; }
+			.say { position: absolute; left: 1.25rem; bottom: calc(3.4rem + env(safe-area-inset-bottom, 0px)); display: flex; align-items: flex-end; gap: 0.6rem; max-width: min(80vw, 420px); opacity: 0; translate: 0 8px; transition: opacity 0.35s, translate 0.35s; }
+			.say.on { opacity: 1; translate: 0 0; }
+			.say img { width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4)); }
+			.say .bubble { background: rgba(0,20,30,0.6); backdrop-filter: blur(6px); border-radius: 12px 12px 12px 4px; padding: 0.6em 0.9em; font-size: 0.95rem; line-height: 1.5; text-shadow: none; margin-bottom: 14px; }
+			.say .bubble .who { display: block; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.2em; opacity: 0.7; margin-bottom: 0.2em; }
+			.cabin .face { float: right; width: 96px; height: 96px; object-fit: contain; margin: -0.3rem 0.6rem 0.4rem 1rem; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5)); }
+			.cabin .x { z-index: 1; }
+			.isle .note { font-family: var(--mono); font-size: 0.78rem; opacity: 0.7; margin-top: 0.6em; }
 			.help { position: absolute; left: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; }
 			.stat { position: absolute; right: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; text-align: right; }
 			/* 지도 */
@@ -138,7 +162,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			.map canvas { width: 100%; height: 100%; display: block; }
 			.map .z { position: absolute; left: 6px; bottom: 4px; font-family: var(--mono); font-size: 0.68rem; opacity: 0.8; }
 			.map.big { width: min(92vw, 560px); height: min(92vw, 560px); right: 50%; top: 50%; translate: 50% -50%; }
-			@media (max-width: 700px) { .map { width: 110px; height: 110px; } .help { bottom: calc(2.9rem + env(safe-area-inset-bottom, 0px)); } .letter .paper { font-size: 1.35rem; } }
+			@media (max-width: 700px) { .map { width: 110px; height: 110px; } .help { bottom: calc(2.9rem + env(safe-area-inset-bottom, 0px)); } .say { bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); } .say img { width: 64px; height: 64px; } .letter .paper { font-size: 1.35rem; } .cabin .face { width: 72px; height: 72px; } }
 			.fallback { max-width: 660px; margin: 4rem auto; padding: 0 1.25rem; display: none; color: #e5e7eb; }
 		</style>
 	</head>
@@ -152,6 +176,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			<div class="next" id="next"><i>➤</i>다음 섬</div>
 			<div class="toast" id="toast"><span class="k" id="tk"></span><span id="tt"></span></div>
 			<div class="map" id="map"><canvas id="mc"></canvas><div class="z" id="mz">M · 크게</div></div>
+			<div class="say" id="say"><img src="/sea/captain.webp" alt="" /><div class="bubble"><span class="who">CAPTAIN</span><span id="sayt"></span></div></div>
 			<div class="help">클릭 · 터치로 항해 · 배를 두 번 누르면 선실</div>
 			<div class="stat" id="stat"></div>
 			<div class="modal isle" id="isle"><div class="paper" id="ipaper">
@@ -160,11 +185,12 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				<div class="k">ISLAND <span id="in"></span> · 항해일지</div>
 				<h2 id="it"></h2><div class="d" id="idate"></div>
 				<p class="role" id="ir"></p>
-				<div class="k">여기서 한 일</div>
+				<div class="note" id="inote"></div>
+				<div class="k" id="iwk">여기서 한 일</div>
 				<ul class="works" id="iw"></ul>
-				<div class="k">STACK</div>
+				<div class="k" id="isk">STACK</div>
 				<div class="chips" id="is"></div>
-				<div id="ipw"><div class="k">여기서 쓴 글</div><ul id="ipl"></ul></div>
+				<div id="ipw"><div class="k" id="ipk">여기서 쓴 글</div><ul id="ipl"></ul></div>
 				<button class="go" id="ig">닻 올리기 →</button>
 			</div></div>
 			<div class="modal letter" id="letter"><div class="paper" id="lpaper">
@@ -176,6 +202,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			</div></div>
 			<div class="modal cabin" id="cabin"><div class="room" id="croom">
 				<button class="x" id="cx" aria-label="닫기">×</button>
+				<img class="face" src="/sea/captain.webp" alt="" />
 				<h2>선실</h2>
 				<div class="k">CAPTAIN</div>
 				<p>8년 차 백엔드. 웹툰 플랫폼에서 뷰어·추천·게이미피케이션·실시간 서버를 만든다. 스타트업의 첫 번째 개발자로 시작해 런칭, MSA 전환, 리뉴얼까지 한 바퀴 돌아봤다. 요청이 한순간에 몰려도 정원·보상·판정이 어긋나지 않게 하는 일을 좋아한다.</p>
@@ -278,6 +305,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				const syncBottles = () => { bottles.forEach((B, i) => btlArr.set([B.x, B.y, got.has(B.id) ? 0 : B.kind], i * 3)); gl.uniform3fv(U('BTL'), btlArr); };
 				gl.uniform1i(U('NB'), bottles.length); syncBottles();
 				const NVAL = bottles.filter((B) => B.kind === 1).length, vals = () => bottles.filter((B) => B.kind === 1 && got.has(B.id)).length;
+				const routeIsles = islands.filter((I) => route.includes(I)), NR_ISL = routeIsles.length, NISL = () => routeIsles.filter((I) => lit.has(I.id)).length; // 조선소는 섬 수에 안 넣는다
 				// 안개 지도 텍스처
 				const fogC = document.createElement('canvas'); fogC.width = fogC.height = 256; const fctx = fogC.getContext('2d', { willReadFrequently: true });
 				fctx.fillStyle = '#000'; fctx.fillRect(0, 0, 256, 256);
@@ -314,6 +342,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					// 목적지가 육지 안이면 해안선 밖으로 옮긴다. 안 그러면 섬에 박혀서 못 움직인다
 					for (const L of lands) { const d = Math.hypot(x - L.x, y - L.y), rr = L.r * 1.25 + 1.4; if (d < rr) { x = L.x + (x - L.x) / (d || 1) * rr; y = L.y + (y - L.y) / (d || 1) * rr; } }
 					tgt = { x, y }; sailing = true; intro.classList.add('off');
+					if (near && stage > 0) say('sail');
 				}
 				const toScreen = (x, y) => [innerWidth / 2 + (x - cam.x) * PPU(), innerHeight / 2 - (y - cam.y) * PPU()];
 				let lastTap = 0;
@@ -335,14 +364,20 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					if (kind === 'anchor') { for (let i = 0; i < 10; i++) noise(t + i * 0.07, 0.05, 1800 + (i % 3) * 400, 6, 0.12); noise(t + 0.75, 0.5, 300, 1.5, 0.2); tone(70, t + 0.75, 0.9, 'sine', 0.12); }
 				}
 				const chime = () => sfx('chime');
+				// 선장 대사: 출항·상륙·편지·완주 때 한 줄. 너무 자주는 안 한다
+				const sayEl = $('say'), sayT = $('sayt'); let sayTimer, sayLast = -9;
+				const LINES = { depart: ['닻 올려. 첫 섬은 여기까지다.'], sail: ['바람 좋다.', '다음 등대를 따라가자.', '해도는 머릿속에 있다.', '조금만 더.'], letter: ['유리병이다. 그때 내가 띄운 거다.', '편지다. 글씨가 많이 번졌네.', '이건 잊고 있었다.'], land: ['닿았다. 등대를 켜자.', '여기다. 닻 내려.', '오래 머문 섬이다.'], revisit: ['돌아왔다. 섬은 그대로네.'], finish: ['여기가 지금이다. 배는 아직 묶여 있다.'], mirage: ['저건 아직 안 잡힌다.'], yard: ['이 배를 지은 곳이다. 혼자 지은 건 아니다.'] };
+				function say(kind, force = false) { const now = performance.now() / 1000; if (!force && now - sayLast < 7) return; sayLast = now; const L = LINES[kind]; sayT.textContent = L[Math.floor(Math.random() * L.length)]; sayEl.classList.add('on'); clearTimeout(sayTimer); sayTimer = setTimeout(() => sayEl.classList.remove('on'), 4200); }
 				let toastT;
 				function showToast(k, text) { tk.textContent = k; tt.textContent = text; toast.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), 6500); }
 				// 섬 화면: 그 섬에서 한 일
 				function openIsle(I) {
 					// 같은 섬에 두 번 머물렀으면 몇 번째 정박인지에 따라 그때 한 일만 보여준다
 					const visit = route.slice(0, stage + 1).filter((P) => P === I).length || 1, stay = I.stays && I.stays[Math.min(visit, I.stays.length) - 1];
-					$('ii').src = `/sea/island-${I.id}.webp`; $('in').textContent = `${islands.indexOf(I) + 1}/${islands.length}`;
+					$('ii').src = `/sea/island-${I.id}.webp`;
 					$('it').textContent = I.title; $('idate').textContent = stay ? stay.date : I.date; $('ir').textContent = stay ? stay.role : I.role;
+					$('inote').textContent = I.note || ''; const lb = I.labels || {}; $('iwk').textContent = lb.works || '여기서 한 일'; $('isk').textContent = lb.stack || 'STACK'; $('ipk').textContent = lb.posts || '여기서 쓴 글';
+					$('in').textContent = I.id === 'S' ? '조선소' : `${route.filter((P, i, a) => a.indexOf(P) === i).indexOf(I) + 1}/${route.filter((P, i, a) => a.indexOf(P) === i).length}`;
 					const w = $('iw'); w.innerHTML = '';
 					I.works.filter((k) => !k.stay || !stay || k.stay === visit).forEach((k) => { const li = document.createElement('li'); if (k.when) { const s = document.createElement('small'); s.textContent = k.when; li.appendChild(s); } const b = document.createElement('b'); b.textContent = k.name; const d = document.createElement('span'); d.textContent = k.desc; li.append(b, d); w.appendChild(li); });
 					const s = $('is'); s.innerHTML = ''; I.stack.forEach((t) => { const e = document.createElement('span'); e.textContent = t; s.appendChild(e); });
@@ -354,7 +389,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				function closeIsle() {
 					isle.classList.remove('on');
 					if (done && !cabinShown) setTimeout(openCabin, 350);
-					else if (stage === 0 && !sailing) { const n = route[1]; goTo(n.x, n.y); } // 첫 일지를 덮으면 다음 섬으로 출항
+					else if (stage === 0 && !sailing) { const n = route[1]; goTo(n.x, n.y); say('depart', true); } // 첫 일지를 덮으면 다음 섬으로 출항
 				}
 				$('ix').addEventListener('click', closeIsle); $('ig').addEventListener('click', closeIsle);
 				isle.addEventListener('pointerdown', (e) => { if (e.target === isle) closeIsle(); });
@@ -379,7 +414,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					if (!logsFound.length) logsEl.innerHTML = '<li>아직 주운 일지가 없다. 지금 섬 앞바다에 떠 있다.</li>';
 					logsFound.forEach((B) => { const li = document.createElement('li'); const a = document.createElement('a'); a.href = B.href; a.textContent = B.title; li.append(a, ` · ${B.date}`); logsEl.appendChild(li); });
 					const days = Math.floor((Date.now() - new Date(SAIL_FROM)) / 864e5);
-					$('clog').textContent = `항해 ${days.toLocaleString()}일째 · 섬 ${lit.size}/${islands.length} · 편지 ${vals()}/${NVAL}` + (done ? ' · 다음 섬은 안개 속' : '');
+					$('clog').textContent = `항해 ${days.toLocaleString()}일째 · 섬 ${NISL()}/${NR_ISL} · 편지 ${vals()}/${NVAL}` + (lit.has('S') ? ' · 조선소 방문' : '') + (done ? ' · 다음 섬은 안개 속' : '');
 					cabin.classList.add('on');
 				}
 				const closeCabin = () => cabin.classList.remove('on');
@@ -389,7 +424,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				img('/sea/cabin.webp').onload = function () { $('croom').style.setProperty('--cabin', `url(${this.src})`); $('croom').classList.add('bg'); };
 				img('/sea/paper.webp').onload = function () { for (const id of ['ipaper', 'lpaper']) { $(id).style.setProperty('--paper', `url(${this.src})`); $(id).classList.add('bg'); } };
 				// 완주: 지도가 전부 열리고 신기루가 나타난다. 섬 화면을 닫으면 선실
-				function finish() { done = true; revealAll(); mirage = { x: 58, y: 62 }; }
+				function finish() { done = true; revealAll(); mirage = { x: 58, y: 62 }; say('finish', true); setTimeout(() => showToast('조선소', '이 배를 지은 곳이 지금 섬 동쪽에 있다.'), 5000); }
 				// 처음: 첫 섬 주변만 걷혀 있고, 첫 섬의 항해일지가 펼쳐져 있다
 				reveal(from.x, from.y, 16); reveal(boat.x, boat.y);
 				setTimeout(() => openIsle(route[0]), 600);
@@ -417,7 +452,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					if (mirage) { mctx.fillStyle = 'rgba(255,255,255,0.7)'; mctx.textAlign = 'center'; mctx.fillText('?', px(mirage.x), py(mirage.y)); }
 					if (sailing) { mctx.strokeStyle = 'rgba(255,255,255,0.8)'; mctx.lineWidth = 1; mctx.beginPath(); mctx.arc(px(tgt.x), py(tgt.y), 4, 0, 7); mctx.stroke(); }
 					mctx.save(); mctx.translate(px(boat.x), py(boat.y)); mctx.rotate(-boat.h); mctx.fillStyle = '#fff'; mctx.beginPath(); mctx.moveTo(6, 0); mctx.lineTo(-4, 4); mctx.lineTo(-4, -4); mctx.closePath(); mctx.fill(); mctx.restore();
-					if (big) { mctx.fillStyle = 'rgba(255,255,255,0.7)'; mctx.textAlign = 'left'; mctx.fillText('N', 8, 12); mctx.fillText(`섬 ${lit.size}/${islands.length} · 편지 ${vals()}/${NVAL}` + (done ? ' · 다음 섬 ?' : ''), 8, S - 12); }
+					if (big) { mctx.fillStyle = 'rgba(255,255,255,0.7)'; mctx.textAlign = 'left'; mctx.fillText('N', 8, 12); mctx.fillText(`섬 ${NISL()}/${NR_ISL} · 편지 ${vals()}/${NVAL}` + (done ? ' · 다음 섬 ?' : ''), 8, S - 12); }
 				}
 				map.addEventListener('pointerdown', (e) => {
 					e.stopPropagation();
@@ -466,11 +501,12 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 							if (!lit.has(near.id)) { lit.add(near.id); syncLit(); }
 							// 순서대로 닿으면 항로가 한 구간 그려진다. 마지막 섬이면 완주
 							if (near === nextIsle()) { stage++; syncRoute(); if (stage === route.length - 1) finish(); }
+							say(near.id === 'S' ? 'yard' : route.slice(0, stage).includes(near) && near !== nextIsle() ? 'revisit' : 'land', true);
 							clearTimeout(landT); const L = near; landT = setTimeout(() => { if (near === L) openIsle(L); }, 900);
 						}
 					}
 					// 유리병 건지기: 편지를 펼친다
-					if (!anyOpen()) for (const B of bottles) if (!got.has(B.id) && Math.hypot(boat.x - B.x, boat.y - B.y) < 2.2) { got.add(B.id); syncBottles(); chime(); openLetter(B); break; } // 편지를 접으면 가던 길을 계속 간다
+					if (!anyOpen()) for (const B of bottles) if (!got.has(B.id) && Math.hypot(boat.x - B.x, boat.y - B.y) < 2.2) { got.add(B.id); syncBottles(); chime(); if (B.kind === 1) say('letter', true); openLetter(B); break; } // 편지를 접으면 가던 길을 계속 간다
 					// 다음 섬 나침반: 화면 밖에 있으면 가장자리에 방향을 띄운다
 					const n = nextIsle();
 					if (n && !near) {
@@ -482,12 +518,12 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					// 신기루: 다가가면 그만큼 물러난다
 					if (mirage) {
 						const mdx = mirage.x - boat.x, mdy = mirage.y - boat.y, mdist = Math.hypot(mdx, mdy);
-						if (mdist < 15) { const ang = Math.atan2(mdy, mdx); let mx = boat.x + Math.cos(ang) * 24, my = boat.y + Math.sin(ang) * 24; if (Math.abs(mx) > 72 || Math.abs(my) > 72) { const a2 = Math.atan2(-boat.y, -boat.x) + Math.PI; mx = boat.x + Math.cos(a2 + 1.2) * 24; my = boat.y + Math.sin(a2 + 1.2) * 24; } mirage = { x: Math.max(-74, Math.min(74, mx)), y: Math.max(-74, Math.min(74, my)) }; if (now / 1000 - mirageT > 8) { mirageT = now / 1000; showToast('다음 섬', '가까워지면 멀어진다. 아직 안개 속이다.'); } }
+						if (mdist < 15) { const ang = Math.atan2(mdy, mdx); let mx = boat.x + Math.cos(ang) * 24, my = boat.y + Math.sin(ang) * 24; if (Math.abs(mx) > 72 || Math.abs(my) > 72) { const a2 = Math.atan2(-boat.y, -boat.x) + Math.PI; mx = boat.x + Math.cos(a2 + 1.2) * 24; my = boat.y + Math.sin(a2 + 1.2) * 24; } mirage = { x: Math.max(-74, Math.min(74, mx)), y: Math.max(-74, Math.min(74, my)) }; if (now / 1000 - mirageT > 8) { mirageT = now / 1000; showToast('다음 섬', '가까워지면 멀어진다. 아직 안개 속이다.'); say('mirage'); } }
 						const [sx, sy] = toScreen(mirage.x, mirage.y);
 						mirEl.style.left = `${sx}px`; mirEl.style.top = `${sy - 40}px`; mirEl.classList.toggle('on', sx > 0 && sx < innerWidth && sy > 0 && sy < innerHeight);
 					}
 					const days = Math.floor((Date.now() - new Date(SAIL_FROM)) / 864e5);
-					stat.textContent = `항해 ${days.toLocaleString()}일째 · ${boat.v.toFixed(1)} kn · 섬 ${lit.size}/${islands.length} · 편지 ${vals()}/${NVAL}`;
+					stat.textContent = `항해 ${days.toLocaleString()}일째 · ${boat.v.toFixed(1)} kn · 섬 ${NISL()}/${NR_ISL} · 편지 ${vals()}/${NVAL}`;
 					mapT += dt; if (mapT > 0.2) { mapT = 0; drawMap(); }
 				}
 				function frame(now) {
