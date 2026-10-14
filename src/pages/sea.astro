@@ -104,7 +104,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			.intro.off { opacity: 0; }
 			.mirage, .next { position: absolute; left: 0; top: 0; font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.15em; opacity: 0; transition: opacity 0.6s; translate: -50% -50%; white-space: nowrap; }
 			.mirage.on { opacity: 0.55; animation: pulse 3s ease-in-out infinite; }
-			.next.on { opacity: 0.8; }
+			.next { font-size: 0.95rem; font-weight: 700; } .next.on { opacity: 0.95; }
 			.next i { display: inline-block; font-style: normal; margin-right: 0.4em; }
 			.toast { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); width: min(90vw, 460px); background: rgba(0,20,30,0.55); backdrop-filter: blur(6px); border-radius: 12px; padding: 0.9em 1.1em; font-size: 0.95rem; line-height: 1.6; text-shadow: none; opacity: 0; transition: opacity 0.4s, translate 0.4s; translate: 0 8px; }
 			.toast.on { opacity: 1; translate: 0 0; }
@@ -172,7 +172,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 		<canvas id="fx"></canvas>
 		<div class="hud" id="hud">
 			<div class="top"><a class="brand" href="/">{SITE_TITLE}</a><div class="links"><a href="/blog">글</a><a href="/about">소개</a></div></div>
-			<div class="intro" id="intro"><div><h1>easyho.log</h1><p>2018년 8월, 첫 섬 앞바다. 여기서 출항한다.<br />등대 불빛을 따라가면 다음 섬이 나온다.</p><div class="go">바다를 눌러 출항</div></div></div>
+			<div class="intro" id="intro"><div><h1>easyho.log</h1><p id="ip">2018년 8월, 첫 섬 앞바다. 여기서 출항한다.<br />등대 불빛을 따라가면 다음 섬이 나온다.</p><div class="go">바다를 눌러 출항</div></div></div>
 			<div class="mirage" id="mirage">다음 섬 ?</div>
 			<div class="next" id="next"><i>➤</i>다음 섬</div>
 			<div class="toast" id="toast"><span class="k" id="tk"></span><span id="tt"></span></div>
@@ -268,7 +268,9 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					// 다음 섬(신기루): 항해를 마친 뒤에만 안개 너머에 보인다
 					float md = island(p, vec4(MIR.xy, 3.2, 4.)); col = mix(col, mix(col, vec3(0.5,0.6,0.6), 0.5), smoothstep(0.1,-0.1,md));
 					// 지나온 항로: 굵은 점선. 닿은 섬까지는 또렷하게, 다음 섬까지는 희미한 안내선으로
-					for(int i=0;i<NR;i++){ if (i == NR-1 && NEXT < 0) break; float s = sdSeg(p, ROUTE[i], ROUTE[i+1]); float along = dot(p-ROUTE[i], normalize(ROUTE[i+1]-ROUTE[i])); float dash = step(0.45, fract(along/2.6)); float a = (i < NR-1) ? 0.85 : 0.28; col = mix(col, vec3(0.02,0.08,0.12), smoothstep(0.42,0.28,s)*dash*0.45*a*step(0., d)); col = mix(col, vec3(1.,0.97,0.85), smoothstep(0.26,0.14,s)*dash*a*step(0., d)); }
+					for(int i=0;i<NR;i++){ if (i == NR-1 && NEXT < 0) break; bool guide = i == NR-1; float s = sdSeg(p, ROUTE[i], ROUTE[i+1]); float along = dot(p-ROUTE[i], normalize(ROUTE[i+1]-ROUTE[i])); float dash = guide ? step(0.55, fract(along/2.6 - T*0.9)) : step(0.45, fract(along/2.6)); float a = guide ? 0.5 : 0.85; col = mix(col, vec3(0.02,0.08,0.12), smoothstep(0.42,0.28,s)*dash*0.45*a*step(0., d)); col = mix(col, guide ? vec3(1.,0.9,0.55) : vec3(1.,0.97,0.85), smoothstep(0.26,0.14,s)*dash*a*step(0., d)); }
+					// 다음 섬: 맥동하는 링
+					if (NEXT >= 0) { float nr = ISL[NEXT].z*1.25 + 2.2 + 0.6*sin(T*2.5); float nd = abs(length(p - ISL[NEXT].xy) - nr); col += vec3(1.,0.9,0.55) * smoothstep(0.35, 0., nd) * (0.45 + 0.25*sin(T*2.5)) * step(0., d); }
 					// 항적
 					for(int i=0;i<${NT}-1;i++){ float s = sdSeg(p, TRAIL[i], TRAIL[i+1]); float w = 0.15 + 0.5*float(i)/float(${NT}); col = mix(col, vec3(0.95), smoothstep(w, w-0.12, s) * (1.-float(i)/float(${NT})) * 0.5 * smoothstep(0.4,0.6,n2)); }
 					// 목적지 링
@@ -400,7 +402,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				function closeIsle() {
 					isle.classList.remove('on');
 					if (done && !cabinShown) setTimeout(openCabin, 350);
-					else if (stage === 0 && !sailing) { const n = route[1]; goTo(n.x, n.y); say('depart', true); } // 첫 일지를 덮으면 다음 섬으로 출항
+					else if (stage === 0 && !sailing) { say('depart', true); $('ip').innerHTML = '흐르는 점선이 다음 섬으로 가는 길이다.<br />등대 불빛도 그쪽을 비춘다.'; } // 첫 일지를 덮으면 길만 알려준다. 출항은 방문자가
 				}
 				$('ix').addEventListener('click', closeIsle); $('ig').addEventListener('click', closeIsle);
 				isle.addEventListener('pointerdown', (e) => { if (e.target === isle) closeIsle(); });
