@@ -42,3 +42,4 @@ Consult these guides before working on related tasks:
 
 - 포스트 frontmatter에 `category`(카드팩 단위)를 넣는다. `grade`(C/R/SR/SSR)는 생략하면 자동 산정.
 - `/lab/sea/` 선실: `public/cv.pdf`를 두면 이력서 버튼이 생긴다(실명·전화번호 없는 판으로). 읽는 책은 sea.astro의 `captain.reading`에 적으면 보인다.
+- 이미지 자리 채우기 두 가지: (1) 도식·그래프는 Claude가 SVG로 직접 그려 `public/images/*.svg`로 넣고 placeholder를 `![](...)`로 교체. (2) 일러스트는 `OPENAI_API_KEY=... node scripts/gen-images.mjs [slug]`가 placeholder 프롬프트로 생성해 jpg로 줄여 넣고 블록을 교체(`--dry`로 목록만). 키는 환경변수로만, 저장소에 쓰지 않는다.
