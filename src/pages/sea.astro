@@ -8,15 +8,16 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 // 방문자는 첫 섬에서 출항해 시간순으로 항로를 따라간다. 닿을 때마다 등대가 켜지고 지나온 길이 그려지고, 그 섬에서 한 일이 펼쳐진다.
 const islands = [
 	{ id: 'A', x: -48, y: -46, r: 3.6, seed: 2, title: '영양제 추천 스타트업', date: '2018.08 – 2021.09 · 2022.02 – 2024.10', role: '첫 번째 개발자로 입사. 런칭부터 MSA 전환까지 하고 한 번 떠났다가, 돌아와서 리뉴얼을 리드했다.',
+		stays: [{ date: '2018.08 – 2021.09', role: '첫 번째 개발자로 입사했다. 초기 모델부터 런칭, MSA 전환, 협업 인프라까지. 3년을 머물고 한 번 떠난다.' }, { date: '2022.02 – 2024.10 · 두 번째 정박', role: '다섯 달 만에 돌아왔다. 이번엔 쇼핑몰 리뉴얼을 리드하고 데이터 동기화와 멀티테넌시를 깔았다. 여기서 두 해 반을 더 머물렀다.' }],
 		works: [
-			{ when: '1기 · 2018 – 2021', name: '서비스 런칭', desc: '영양제 추천 알고리즘과 성분 시각화(특허 등록), 간편결제·PG 연동과 빌링, 주문→결제 흐름, 쿠폰·마일리지, 주문·배송·제품 백오피스.' },
-			{ when: '1기', name: 'MSA 전환', desc: '모놀리식을 Eureka·Zuul 기반 마이크로서비스로 분리. Docker Swarm 빌드·배포 자동화와 사용량 기반 오토스케일, ELK 로그 통합과 행동 로그 대시보드.' },
-			{ when: '1기', name: '외부 협업 인프라', desc: '유통사 회원 대상 추천 API 서버. GitLab CI → ECR → Fargate Blue-Green 무중단 배포. 보험사 PHR 데이터 기반 건강관리·추천 API, SignedJWT 통신 암호화.' },
-			{ when: '2기 · 2022 – 2024', name: '쇼핑몰 리뉴얼 리드', desc: 'DB 설계부터 프로젝트 구조까지. 약사–고객 실시간 채팅 상담(WebSocket, 읽음 표시, 문진·이미지, 알림톡), 영양제 조합 평가·비교, Elasticsearch 검색 고도화.' },
-			{ when: '2기', name: '데이터 동기화·운영', desc: '협력사마다 늘어난 DB를 Kafka Connect(CDC)로 실시간 동기화. ELK 클러스터 업그레이드와 Filebeat. Redis 캐싱으로 자가진단 알고리즘 80% 단축.' },
-			{ when: '2기', name: '멀티테넌시 솔루션', desc: '여러 협력사에 같은 서비스를 내주기 위한 통합 서비스 설계. SignedJWT·Refresh Token 인증, S3 업로드 공통 모듈.' },
+			{ stay: 1, when: '2018 – 2019', name: '서비스 런칭', desc: '영양제 추천 알고리즘과 성분 시각화(특허 등록), 간편결제·PG 연동과 빌링, 주문→결제 흐름, 쿠폰·마일리지, 주문·배송·제품 백오피스.' },
+			{ stay: 1, when: '2019 – 2020', name: 'MSA 전환', desc: '모놀리식을 Eureka·Zuul 기반 마이크로서비스로 분리. Docker Swarm 빌드·배포 자동화와 사용량 기반 오토스케일, ELK 로그 통합과 행동 로그 대시보드.' },
+			{ stay: 1, when: '2020 – 2021', name: '외부 협업 인프라', desc: '유통사 회원 대상 추천 API 서버. GitLab CI → ECR → Fargate Blue-Green 무중단 배포. 보험사 PHR 데이터 기반 건강관리·추천 API, SignedJWT 통신 암호화.' },
+			{ stay: 2, when: '2022 – 2023', name: '쇼핑몰 리뉴얼 리드', desc: 'DB 설계부터 프로젝트 구조까지. 약사–고객 실시간 채팅 상담(WebSocket, 읽음 표시, 문진·이미지, 알림톡), 영양제 조합 평가·비교, Elasticsearch 검색 고도화.' },
+			{ stay: 2, when: '2023', name: '데이터 동기화·운영', desc: '협력사마다 늘어난 DB를 Kafka Connect(CDC)로 실시간 동기화. ELK 클러스터 업그레이드와 Filebeat. Redis 캐싱으로 자가진단 알고리즘 80% 단축.' },
+			{ stay: 2, when: '2024', name: '멀티테넌시 솔루션', desc: '여러 협력사에 같은 서비스를 내주기 위한 통합 서비스 설계. SignedJWT·Refresh Token 인증, S3 업로드 공통 모듈.' },
 		], stack: ['Java', 'Spring Boot', 'Spring Cloud', 'Docker Swarm', 'MySQL · Aurora', 'Redis', 'Kafka', 'ELK', 'Elasticsearch', 'AWS'], posts: [] },
-	{ id: 'B', x: -14, y: -62, r: 2.6, seed: 5, title: 'K-pop 팬 플랫폼', date: '2021.09 – 2022.02', role: '글로벌 팬 플랫폼 백엔드. 생방송 투표가 열리는 순간의 트래픽을 처음 겪었다. 짧게 머물고 첫 섬으로 돌아갔다.',
+	{ id: 'B', x: -22, y: -66, r: 2.6, seed: 5, title: 'K-pop 팬 플랫폼', date: '2021.09 – 2022.02', role: '글로벌 팬 플랫폼 백엔드. 생방송 투표가 열리는 순간의 트래픽을 처음 겪었다. 짧게 머물고 첫 섬으로 돌아갔다.',
 		works: [
 			{ when: '2021 – 2022', name: '아티스트 채널 API', desc: '소식·일정 API. 사용자 제보 → 관리자 검수 → 등록 흐름으로 정확성을 보장.' },
 			{ when: '', name: 'Redis 캐시', desc: '좋아요·회원 맞춤 데이터에 캐시를 넣어 투표 피크의 서버 부하와 불필요한 호출을 줄였다.' },
@@ -238,8 +239,8 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					float at = T - ANC.z; if (at > 0. && at < 1.6) { float ar = abs(length(p - ANC.xy) - at * 4.); col += vec3(1.) * smoothstep(0.25, 0., ar) * (1. - at / 1.6) * 0.6; }
 					// 다음 섬(신기루): 항해를 마친 뒤에만 안개 너머에 보인다
 					float md = island(p, vec4(MIR.xy, 3.2, 4.)); col = mix(col, mix(col, vec3(0.5,0.6,0.6), 0.5), smoothstep(0.1,-0.1,md));
-					// 지나온 항로: 점선. 닿은 섬까지만 그려진다
-					for(int i=0;i<NR-1;i++){ float s = sdSeg(p, ROUTE[i], ROUTE[i+1]); float along = dot(p-ROUTE[i], normalize(ROUTE[i+1]-ROUTE[i])); float dash = step(0.5, fract(along/2.4)); col = mix(col, vec3(1.), smoothstep(0.16,0.06,s)*dash*0.35*step(0., d)); }
+					// 지나온 항로: 굵은 점선. 닿은 섬까지는 또렷하게, 다음 섬까지는 희미한 안내선으로
+					for(int i=0;i<NR;i++){ if (i == NR-1 && NEXT < 0) break; float s = sdSeg(p, ROUTE[i], ROUTE[i+1]); float along = dot(p-ROUTE[i], normalize(ROUTE[i+1]-ROUTE[i])); float dash = step(0.45, fract(along/2.6)); float a = (i < NR-1) ? 0.85 : 0.28; col = mix(col, vec3(0.02,0.08,0.12), smoothstep(0.42,0.28,s)*dash*0.45*a*step(0., d)); col = mix(col, vec3(1.,0.97,0.85), smoothstep(0.26,0.14,s)*dash*a*step(0., d)); }
 					// 항적
 					for(int i=0;i<${NT}-1;i++){ float s = sdSeg(p, TRAIL[i], TRAIL[i+1]); float w = 0.15 + 0.5*float(i)/float(${NT}); col = mix(col, vec3(0.95), smoothstep(w, w-0.12, s) * (1.-float(i)/float(${NT})) * 0.5 * smoothstep(0.4,0.6,n2)); }
 					// 목적지 링
@@ -338,10 +339,12 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				function showToast(k, text) { tk.textContent = k; tt.textContent = text; toast.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), 6500); }
 				// 섬 화면: 그 섬에서 한 일
 				function openIsle(I) {
+					// 같은 섬에 두 번 머물렀으면 몇 번째 정박인지에 따라 그때 한 일만 보여준다
+					const visit = route.slice(0, stage + 1).filter((P) => P === I).length || 1, stay = I.stays && I.stays[Math.min(visit, I.stays.length) - 1];
 					$('ii').src = `/sea/island-${I.id}.webp`; $('in').textContent = `${islands.indexOf(I) + 1}/${islands.length}`;
-					$('it').textContent = I.title; $('idate').textContent = I.date; $('ir').textContent = I.role;
+					$('it').textContent = I.title; $('idate').textContent = stay ? stay.date : I.date; $('ir').textContent = stay ? stay.role : I.role;
 					const w = $('iw'); w.innerHTML = '';
-					I.works.forEach((k) => { const li = document.createElement('li'); if (k.when) { const s = document.createElement('small'); s.textContent = k.when; li.appendChild(s); } const b = document.createElement('b'); b.textContent = k.name; const d = document.createElement('span'); d.textContent = k.desc; li.append(b, d); w.appendChild(li); });
+					I.works.filter((k) => !k.stay || !stay || k.stay === visit).forEach((k) => { const li = document.createElement('li'); if (k.when) { const s = document.createElement('small'); s.textContent = k.when; li.appendChild(s); } const b = document.createElement('b'); b.textContent = k.name; const d = document.createElement('span'); d.textContent = k.desc; li.append(b, d); w.appendChild(li); });
 					const s = $('is'); s.innerHTML = ''; I.stack.forEach((t) => { const e = document.createElement('span'); e.textContent = t; s.appendChild(e); });
 					$('ipw').hidden = !I.posts.length; const pl = $('ipl'); pl.innerHTML = '';
 					I.posts.forEach((p) => { const li = document.createElement('li'); const a = document.createElement('a'); a.href = p.href; a.textContent = p.title; li.appendChild(a); pl.appendChild(li); });
@@ -397,7 +400,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					mctx.globalCompositeOperation = 'source-over'; mctx.filter = 'none';
 					const fs = Math.max(9, S / 40);
 					mctx.font = `${fs}px ui-monospace, Menlo, monospace`; mctx.textBaseline = 'middle';
-					mctx.setLineDash([3, 4]); mctx.strokeStyle = 'rgba(255,255,255,0.55)'; mctx.lineWidth = 1; mctx.beginPath(); route.slice(0, stage + 1).forEach((P, i) => (i ? mctx.lineTo(px(P.x), py(P.y)) : mctx.moveTo(px(P.x), py(P.y)))); mctx.stroke(); mctx.setLineDash([]);
+					mctx.setLineDash([4, 3]); mctx.strokeStyle = 'rgba(255,247,217,0.95)'; mctx.lineWidth = Math.max(1.5, S / 110); mctx.lineCap = 'round'; mctx.beginPath(); route.slice(0, stage + 1).forEach((P, i) => (i ? mctx.lineTo(px(P.x), py(P.y)) : mctx.moveTo(px(P.x), py(P.y)))); mctx.stroke(); const nxt = nextIsle(); if (nxt) { const P = route[stage]; mctx.strokeStyle = 'rgba(255,247,217,0.35)'; mctx.beginPath(); mctx.moveTo(px(P.x), py(P.y)); mctx.lineTo(px(nxt.x), py(nxt.y)); mctx.stroke(); } mctx.setLineDash([]);
 					const nx = nextIsle();
 					for (const L of lands) {
 						const on = lit.has(L.id) || done;
