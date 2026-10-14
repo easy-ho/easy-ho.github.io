@@ -41,5 +41,6 @@ Consult these guides before working on related tasks:
 - 커밋은 이 저장소의 로컬 git 설정(EasyHo / dev.easyho@gmail.com)으로만 한다. 전역 설정을 바꾸지 않는다.
 
 - 포스트 frontmatter에 `category`(카드팩 단위)를 넣는다. `grade`(C/R/SR/SSR)는 생략하면 자동 산정.
-- `/sea/`(src/pages/sea.astro): 첫 섬에서 출항해 시간순으로 섬(다녀온 회사, 익명)에 닿는 항해. 가치관 유리병은 `values` 배열(항로 구간 위 위치), 글은 지금 섬 앞바다의 일지 병으로 자동. 선실: `public/cv.pdf`를 두면 이력서 버튼이 생긴다(실명·전화번호 없는 판으로). 읽는 책은 `captain.reading`에 적으면 보인다. 홈·소개의 한 줄 링크로만 노출한다.
+- `/sea/`(src/pages/sea.astro): 첫 섬에서 출항해 시간순으로 섬(다녀온 회사, 익명)에 닿는 항해. 진행은 저장하지 않는다. 섬 데이터는 `islands` 배열(title/date/role/works/stack/posts, 회사명·서비스명·사업 수치 없이), 유리병 편지는 `values` 배열(항로 구간 위 위치 + 편지 본문), 글은 지금 섬 앞바다의 일지 병으로 자동. 선실: `public/cv.pdf`를 두면 이력서 버튼이 생긴다(실명·전화번호 없는 판으로). 읽는 책은 `captain.reading`에 적으면 보인다. 홈·소개의 한 줄 링크로만 노출한다.
+- 바다 그림 에셋은 `public/sea/*.webp`(배·유리병 2종·섬 4개는 투명 PNG → WebP, 종이·선실 배경). Codex CLI `codex exec`로 "top-down, painterly game-art, background fully transparent (alpha PNG)" 지시로 생성한 뒤 투명 여백 트림·정사각 패딩·축소(배/병 512, 섬 768)해서 WebP로 저장한다. 섬을 추가하면 `island-<id>.webp`를 같은 스타일로 만든다.
 - 이미지 자리 채우기: `node scripts/gen-images.mjs [slug]`가 placeholder 프롬프트로 Codex CLI(`codex exec`, 로그인돼 있어야 함) 이미지 생성 → 1320px JPEG → `public/images/` → 블록을 `![]()`로 교체(프롬프트 주석은 남기지 않는다)(`--dry`로 목록만). Claude가 SVG로 직접 그리는 건 하지 않는다(품질 거부됨).
