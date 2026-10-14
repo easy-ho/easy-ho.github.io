@@ -148,7 +148,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			.letter .sig { text-align: right; margin-top: 0.8em; opacity: 0.8; }
 			.letter a { display: inline-block; margin-top: 0.6em; color: #7a3b14; font-size: 1.2rem; } .letter a[hidden] { display: none; }
 			.letter .fold { display: block; margin: 1.2em auto 0; background: none; border: 1px solid rgba(42,33,24,0.4); color: #2a2118; border-radius: 999px; padding: 0.35em 1.1em; font-family: var(--mono); font-size: 0.78rem; cursor: pointer; }
-			.say { position: absolute; left: 1.25rem; bottom: calc(3.4rem + env(safe-area-inset-bottom, 0px)); display: flex; align-items: flex-end; gap: 0.6rem; max-width: min(80vw, 420px); opacity: 0; translate: 0 8px; transition: opacity 0.35s, translate 0.35s; }
+			.say { position: absolute; left: 1.25rem; bottom: calc(10.2rem + env(safe-area-inset-bottom, 0px)); display: flex; align-items: flex-end; gap: 0.6rem; max-width: min(80vw, 420px); opacity: 0; translate: 0 8px; transition: opacity 0.35s, translate 0.35s; }
 			.say.on { opacity: 1; translate: 0 0; }
 			.say img { width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4)); }
 			.say .bubble { background: rgba(0,20,30,0.6); backdrop-filter: blur(6px); border-radius: 12px 12px 12px 4px; padding: 0.6em 0.9em; font-size: 0.95rem; line-height: 1.5; text-shadow: none; margin-bottom: 14px; }
@@ -156,14 +156,19 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			.cabin .face { float: right; width: 96px; height: 96px; object-fit: contain; margin: -0.3rem 0.6rem 0.4rem 1rem; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.5)); }
 			.cabin .x { z-index: 1; }
 			.isle .note { font-family: var(--mono); font-size: 0.78rem; opacity: 0.7; margin-top: 0.6em; }
-			.help { position: absolute; left: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; }
+			/* 조이스틱: 누르고 끄는 방향으로 간다 */
+			.stick { position: absolute; left: 1.25rem; bottom: calc(2.6rem + env(safe-area-inset-bottom, 0px)); width: 112px; height: 112px; border-radius: 50%; background: rgba(0,20,30,0.35); border: 1px solid rgba(255,255,255,0.35); backdrop-filter: blur(4px); pointer-events: auto; touch-action: none; cursor: grab; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+			.stick::before { content: ''; position: absolute; inset: 50%; width: 6px; height: 6px; translate: -50% -50%; border-radius: 50%; background: rgba(255,255,255,0.5); }
+			.stick .knob { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; translate: -50% -50%; border-radius: 50%; background: rgba(255,247,217,0.85); box-shadow: 0 4px 12px rgba(0,0,0,0.4); transition: transform 0.12s; }
+			.stick.on .knob { transition: none; background: #ffe9a8; }
+			.help { position: absolute; left: calc(1.25rem + 126px); bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; }
 			.stat { position: absolute; right: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; text-align: right; }
 			/* 지도 */
 			.map { position: absolute; right: 1.25rem; top: calc(4.2rem + env(safe-area-inset-top, 0px)); width: 150px; height: 150px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.35); box-shadow: 0 10px 30px rgba(0,0,0,0.4); pointer-events: auto; cursor: pointer; transition: width 0.3s, height 0.3s; background: #061a22; }
 			.map canvas { width: 100%; height: 100%; display: block; }
 			.map .z { position: absolute; left: 6px; bottom: 4px; font-family: var(--mono); font-size: 0.68rem; opacity: 0.8; }
 			.map.big { width: min(92vw, 560px); height: min(92vw, 560px); right: 50%; top: 50%; translate: 50% -50%; }
-			@media (max-width: 700px) { .map { width: 110px; height: 110px; } .help { bottom: calc(2.9rem + env(safe-area-inset-bottom, 0px)); } .say { bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)); } .say img { width: 64px; height: 64px; } .letter .paper { font-size: 1.35rem; } .cabin .face { width: 72px; height: 72px; } }
+			@media (max-width: 700px) { .map { width: 110px; height: 110px; } .stick { width: 96px; height: 96px; } .help { left: calc(1.25rem + 108px); bottom: calc(2.9rem + env(safe-area-inset-bottom, 0px)); } .say { bottom: calc(9.6rem + env(safe-area-inset-bottom, 0px)); } .say img { width: 64px; height: 64px; } .letter .paper { font-size: 1.35rem; } .cabin .face { width: 72px; height: 72px; } }
 			.fallback { max-width: 660px; margin: 4rem auto; padding: 0 1.25rem; display: none; color: #e5e7eb; }
 		</style>
 	</head>
@@ -178,7 +183,8 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			<div class="toast" id="toast"><span class="k" id="tk"></span><span id="tt"></span></div>
 			<div class="map" id="map"><canvas id="mc"></canvas><div class="z" id="mz">M · 크게</div></div>
 			<div class="say" id="say"><img src="/sea/captain.webp" alt="" /><div class="bubble"><span class="who">CAPTAIN</span><span id="sayt"></span></div></div>
-			<div class="help">클릭 · 터치로 항해 · 배를 두 번 누르면 선실</div>
+			<div class="stick" id="stick" aria-label="조이스틱"><div class="knob" id="knob"></div></div>
+			<div class="help">클릭 · 조이스틱 · 방향키로 항해 · 배를 두 번 누르면 선실</div>
 			<div class="stat" id="stat"></div>
 			<div class="modal isle" id="isle"><div class="paper" id="ipaper">
 				<button class="x" id="ix" aria-label="닫기">×</button>
@@ -356,6 +362,17 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 					const ux = (e.clientX / innerWidth * 2 - 1) * (innerWidth / innerHeight), uy = -(e.clientY / innerHeight * 2 - 1);
 					goTo(cam.x + ux * ZOOM * 0.5, cam.y + uy * ZOOM * 0.5);
 				});
+				// 조이스틱과 방향키: 누르고 있는 동안 그 방향으로 간다. 클릭 목적지는 취소된다
+				const stick = $('stick'), knob = $('knob'); let stickV = { x: 0, y: 0 }, stickId = null; const keys = new Set();
+				function stickMove(e) { const r = stick.getBoundingClientRect(), R = r.width / 2; let dx = (e.clientX - (r.left + R)) / R, dy = (e.clientY - (r.top + R)) / R; const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; } stickV = { x: dx, y: -dy }; knob.style.transform = `translate(${dx * R * 0.6}px, ${dy * R * 0.6}px)`; }
+				stick.addEventListener('pointerdown', (e) => { e.stopPropagation(); stickId = e.pointerId; try { stick.setPointerCapture(e.pointerId); } catch {} stick.classList.add('on'); stickMove(e); });
+				stick.addEventListener('pointermove', (e) => { if (e.pointerId === stickId) stickMove(e); });
+				const stickEnd = (e) => { if (e.pointerId !== stickId) return; stickId = null; stickV = { x: 0, y: 0 }; stick.classList.remove('on'); knob.style.transform = ''; };
+				stick.addEventListener('pointerup', stickEnd); stick.addEventListener('pointercancel', stickEnd);
+				const KEYV = { ArrowUp: [0, 1], ArrowDown: [0, -1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, 1], s: [0, -1], a: [-1, 0], d: [1, 0] };
+				addEventListener('keydown', (e) => { if (KEYV[e.key] && !anyOpen()) { keys.add(e.key); e.preventDefault(); } });
+				addEventListener('keyup', (e) => keys.delete(e.key));
+				function driveV() { if (stickId !== null) return stickV; let x = 0, y = 0; for (const k of keys) { x += KEYV[k][0]; y += KEYV[k][1]; } const m = Math.hypot(x, y); return m ? { x: x / m, y: y / m } : null; }
 				// 소리: 전부 합성. 병 건질 때 종소리, 상륙할 때 닻 사슬
 				let ac;
 				function tone(f, t0, dur, type = 'sine', g = 0.05) { const o = ac.createOscillator(), v = ac.createGain(); o.type = type; o.frequency.value = f; v.gain.setValueAtTime(0, t0); v.gain.linearRampToValueAtTime(g, t0 + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(v).connect(ac.destination); o.start(t0); o.stop(t0 + dur); }
@@ -489,7 +506,14 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				}
 				let last = performance.now(), t0 = last, trailT = 0, mapT = 0, landT = 0;
 				function step(dt, now) {
-					if (sailing && !anyOpen()) {
+					const dv = anyOpen() ? null : driveV();
+					if (dv && Math.hypot(dv.x, dv.y) > 0.15) {
+						sailing = false; intro.classList.add('off');
+						const want = Math.atan2(dv.y, dv.x); let da = want - boat.h; da = Math.atan2(Math.sin(da), Math.cos(da));
+						boat.h += Math.max(-2.4 * dt, Math.min(2.4 * dt, da));
+						const target = 12 * Math.min(1, Math.hypot(dv.x, dv.y)) * (1 - Math.min(1, Math.abs(da) / 1.2) * 0.6);
+						boat.v += (target - boat.v) * Math.min(1, dt * 2.5);
+					} else if (sailing && !anyOpen()) {
 						const dx = tgt.x - boat.x, dy = tgt.y - boat.y, dist = Math.hypot(dx, dy);
 						const want = Math.atan2(dy, dx); let da = want - boat.h; da = Math.atan2(Math.sin(da), Math.cos(da));
 						boat.h += Math.max(-2.4 * dt, Math.min(2.4 * dt, da));
