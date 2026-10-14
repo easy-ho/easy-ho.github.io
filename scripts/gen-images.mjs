@@ -1,5 +1,4 @@
 // 포스트의 이미지 placeholder를 찾아 Codex CLI로 이미지를 생성하고, 1320px JPEG로 줄여 public/images/에 넣고, 블록을 ![]()로 교체한다.
-// 원래 프롬프트는 이미지 아래 <!-- IMAGE-PROMPT --> 주석으로 남겨 되돌릴 수 있게 한다.
 // 사용: node scripts/gen-images.mjs [--dry] [slug-substring]   (codex 로그인 필요)
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -21,7 +20,7 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith('.md') && f.includes(f
 			if (!existsSync(png)) { console.error(`파일 없음: ${png}`); continue; }
 			execFileSync('sips', ['-Z', '1320', '-s', 'format', 'jpeg', '-s', 'formatOptions', '85', png, '--out', out], { stdio: 'ignore' });
 		}
-		md = md.replace(block, `![${alt.trim()}](/images/${base}.jpg)\n<!-- IMAGE-PROMPT: ${prompt.trim()} -->`);
+		md = md.replace(block, `![${alt.trim()}](/images/${base}.jpg)`);
 		writeFileSync(`${dir}/${f}`, md);
 		console.log(`  ✓ ${out}`);
 	}

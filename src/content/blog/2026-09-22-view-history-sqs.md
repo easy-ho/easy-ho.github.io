@@ -6,7 +6,6 @@ pubDate: '2026-09-22'
 ---
 
 ![지구본 위 두 도시 사이를 가로지르는 긴 선과, 그 선 위에서 기다리는 작은 봉투 아이콘들](/images/cross-region-write.jpg)
-<!-- IMAGE-PROMPT: Flat vector illustration of a stylized globe showing the Pacific Ocean, two small city markers on opposite sides connected by a long arc. Along the arc several tiny envelope icons wait in a queue. One marker has a small database cylinder, the other a small server icon. Soft blue and gray palette, white background, no text, 16:9. -->
 
 봄에 뷰어 API를 신규 서버로 옮겼다. 레거시 API 하나가 작품·회차·이미지·배너를 전부 수 MB짜리 응답에 담아 내려주던 걸, 정적 정보(`/metadata`)와 사용자 상태(`/me`)로 쪼갰다. 응답은 수 KB가 됐고 캐시를 타는데도 4초 넘게 걸리던 게 0.3초대로 내려왔다. 그때 캐시 적중 상태에서 "토탈 4.5초가 말이 되냐"고 했던 게 출발점이었는데, 그 얘기는 기록이 흩어져서 여기선 생략.
 
@@ -46,7 +45,6 @@ pubDate: '2026-09-22'
 컨슈머는 1건씩 처리하고 성공한 것만 삭제한다. 실패 건은 남겨서 visibility timeout 뒤에 재시도. 이력 갱신은 "본 회차 ID 집합에 합치기"라 재처리해도 결과가 같다. 시각은 메시지에 실은 값이 아니라 레거시 메서드가 찍는 소비 시각을 그대로 쓴다. 몇 초 밀리는 건 허용하기로 했다.
 
 ![큐 입구에서 봉투가 조용히 바닥으로 떨어지는데 아무도 눈치채지 못하는 장면](/images/silent-skip.jpg)
-<!-- IMAGE-PROMPT: Minimal flat illustration: a conveyor belt feeding envelopes into a slot, but one envelope silently slips off the side into a small gap in the floor while a tiny indicator light next to the slot stays green. Calm, slightly ironic mood, soft gray and blue palette, white background, no text, 16:9. -->
 
 ## 큐가 조용히 삼킨 것들
 

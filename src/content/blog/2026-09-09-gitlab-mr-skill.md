@@ -6,7 +6,6 @@ pubDate: '2026-09-09'
 ---
 
 ![빈 MR 템플릿이 자동으로 채워지는 장면](/images/mr-skill-hero.jpg)
-<!-- IMAGE-PROMPT: Flat vector illustration of a merge request form on a screen, left half empty with dotted placeholder lines, right half filled with neat checkboxes and bullet points, a small robot arm with a pen filling it in. Soft purple and teal palette, no readable text, 16:9. -->
 
 팀에 MR 템플릿이 있다. 개요, 작업 유형, 변경 사항, 체크리스트, 리뷰 요청, 참고 자료. 양식 자체는 좋은데 **매번 손으로 채우는 게 문제**다. 변경 사항은 diff 다시 보면서 쓰고, 이슈키는 브랜치명에서 복사하고, 리뷰 요청은 결국 "확인 부탁드립니다" 한 줄.
 
@@ -52,7 +51,6 @@ git log origin/master..HEAD --oneline
 중요한 건 **해당 없으면 비워둔다**는 규칙. 억지로 채우면 리뷰어가 피로해지고 결국 아무도 안 읽는다.
 
 ![diff 신호가 리뷰 체크박스로 변환되는 흐름도](/images/diff-to-review-points.jpg)
-<!-- IMAGE-PROMPT: Minimal flowchart illustration: on the left a code diff block with red and green lines, arrows pointing right into three checkbox items with small icons (a database cylinder, a lock, a clock). Flat design, light background, no readable text. -->
 
 ### 작업 체크리스트는 자동 체크 안 함
 
@@ -99,4 +97,3 @@ SKILL.md 하나에 다 들어 있다.
 - 같은 패턴으로 배포 체크리스트 스킬, 산출물 문서 스킬도 만들었다. 그건 다음에.
 
 ![스킬 파일 하나에서 MR·체크리스트·문서가 갈라져 나오는 모습](/images/skill-family.jpg)
-<!-- IMAGE-PROMPT: Flat illustration of a single markdown file icon at the center, with three branches growing out to a merge request icon, a checklist icon, and a document icon. Organic branching lines, soft green and gray palette, no readable text. -->

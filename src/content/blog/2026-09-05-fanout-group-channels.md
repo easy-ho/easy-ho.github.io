@@ -6,7 +6,6 @@ pubDate: '2026-09-05'
 ---
 
 ![한 점에서 수백 갈래로 퍼지는 선이 화면을 가득 메우다가, 작은 묶음 단위로 정리되는 대비](/images/fanout-before-after.jpg)
-<!-- IMAGE-PROMPT: Flat vector illustration, two panels side by side. Left: a single node in the center shooting hundreds of thin tangled lines to a dense ring of small dots, overwhelming and messy. Right: the same dots arranged in small clusters of about twenty, each cluster with its own short neat lines inside, calm and orderly. Soft blue and gray palette, white background, no text, 16:9. -->
 
 필드 위에서 캐릭터 500개가 돌아다니고, 마감 순간에 서 있는 존으로 정답을 판정하는 서바이벌 퀴즈 서버를 혼자 만들었다. Kotlin, WebFlux, WebSocket, Redis Pub/Sub. 오픈 열흘 전 부하 테스트에서 파드가 OOM으로 죽었다. 이 글은 그날 뭐가 터졌고 어떻게 고쳤는지 기록이다.
 
@@ -55,7 +54,6 @@ quiz:game:{gameId}:group:{groupNo} 그룹 — MOVE, CHAT, EMOTE, 입퇴장
 그룹은 서버가 정한다. 입장할 때 Lua 스크립트 하나가 "가장 낮은 번호의 미만원 그룹"에 넣고, 게임 시작 시점에 마지막 그룹이 절반 이하면 나머지에 라운드로빈으로 병합한 뒤 확정. 이후엔 안 바뀐다. 관전자는 기본 0번 그룹을 보고, 보고 싶은 그룹을 바꿀 수 있다.
 
 ![인스턴스 하나가 Redis 채널을 한 번만 구독하고 그걸 내부 세션들에 나눠주는 구조도](/images/one-subscription-per-instance.jpg)
-<!-- IMAGE-PROMPT: Minimal diagram illustration: on the left a single red cylinder labeled only with a lightning icon (a message broker), one thin line going to a rounded rectangle (a server), and inside that rectangle the line fans out to many small circles (client sessions). Emphasize that only one line crosses from the cylinder to the rectangle. Flat design, soft blue and gray palette, white background, no readable text, 16:9. -->
 
 인스턴스 쪽에서 중요한 게 하나 더 있다. Redis 구독을 **세션마다 하지 않는다.** 채널당 공유 Flux를 하나만 만들고 `share()`로 로컬 세션들이 나눠 쓴다. 첫 세션이 붙을 때 SUBSCRIBE, 마지막 세션이 떠날 때 UNSUBSCRIBE. WebSocket 연결이 5,000개여도 Redis 구독 수는 인스턴스 수에 비례한다. 세션은 `switchMap`으로 그룹이 바뀌면 구독을 갈아탄다.
 

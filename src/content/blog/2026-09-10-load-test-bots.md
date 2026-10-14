@@ -6,7 +6,6 @@ pubDate: '2026-09-10'
 ---
 
 ![노트북 한 대에서 수백 개의 작은 슬라임 캐릭터가 줄지어 나와 멀리 있는 서버 건물로 행진하는 장면](/images/bot-march.jpg)
-<!-- IMAGE-PROMPT: Flat vector illustration: an open laptop on the left, and from its screen a long marching line of hundreds of tiny identical round slime characters heading toward a small server rack on the far right. The laptop looks slightly overheated with a few sweat drops. Playful but clean, soft pastel palette, white background, no text, 16:9. -->
 
 실시간 퀴즈 서버 오픈 전에 500명이 동시에 들어와서 12라운드를 끝까지 도는 걸 한 번은 봐야 했다. 일반 부하 도구로는 안 됐다. 문제를 받으면 존을 골라 이동하고, 틀리면 유령이 되고, 관전자는 따로 분류되는 **상태 있는 프로토콜**이라서. 요청 반복으로는 게임이 진행조차 안 된다.
 
@@ -35,7 +34,6 @@ pubDate: '2026-09-10'
 **봇이 너무 부지런했다.** 화면 애니메이션까지 흉내 내느라 중간 좌표를 초당 10건씩 보내고 있었다. 판정엔 목표 좌표 한 건이면 충분하다. 3초에 1건으로 줄이고 봇마다 전송 시점을 흩뿌렸더니 30마리 기준 초당 282건이 13건이 됐다. 부하 테스트가 부하를 과장하고 있었던 셈.
 
 ![숫자 450 근처에서 막힌 게이지와, 옆에 두 번째 노트북이 합류하면서 게이지가 500을 넘기는 장면](/images/wall-at-450.jpg)
-<!-- IMAGE-PROMPT: Flat vector illustration: a horizontal progress gauge stuck just short of a marked line, one laptop below it looking exhausted; to the right a second laptop joins and the gauge pushes past the line with a small burst of confetti. Minimal, soft blue and yellow palette, white background, no readable numbers or text, 16:9. -->
 
 ## 450의 벽
 
