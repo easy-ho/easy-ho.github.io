@@ -242,7 +242,11 @@ const bottles = [...intro_bottles, ...logs];
 				const intro = $('intro'), nearEl = $('near'), nt = $('nt'), nd = $('nd'), np = $('np'), stat = $('stat'), mirEl = $('mirage'), toast = $('toast'), tk = $('tk'), tt = $('tt'), ta = $('ta'), map = $('map'), mc = $('mc'), mz = $('mz'), cabin = $('cabin');
 				const ZOOM = innerWidth < 700 ? 30 : 38;
 				const lands = islands;
-				function goTo(x, y) { tgt = { x, y }; sailing = true; intro.classList.add('off'); }
+				function goTo(x, y) {
+					// 목적지가 육지 안이면 해안선 밖으로 옮긴다. 안 그러면 섬에 박혀서 못 움직인다
+					for (const L of lands) { const d = Math.hypot(x - L.x, y - L.y), rr = L.r * 1.25 + 1.4; if (d < rr) { x = L.x + (x - L.x) / (d || 1) * rr; y = L.y + (y - L.y) / (d || 1) * rr; } }
+					tgt = { x, y }; sailing = true; intro.classList.add('off');
+				}
 				const toScreen = (x, y) => [innerWidth / 2 + (x - cam.x) / (ZOOM * 0.5) * (innerHeight / 2), innerHeight / 2 - (y - cam.y) / (ZOOM * 0.5) * (innerHeight / 2)];
 				let lastTap = 0;
 				canvas.addEventListener('pointerdown', (e) => {
@@ -324,7 +328,7 @@ const bottles = [...intro_bottles, ...logs];
 						if (dist < 1.2 && boat.v < 0.3) sailing = false;
 					} else boat.v *= 0.96;
 					let nx = boat.x + Math.cos(boat.h) * boat.v * dt, ny = boat.y + Math.sin(boat.h) * boat.v * dt;
-					for (const L of lands) { const d = Math.hypot(nx - L.x, ny - L.y); const rr = L.r * 1.25 + 0.9; if (d < rr) { nx = L.x + (nx - L.x) / d * rr; ny = L.y + (ny - L.y) / d * rr; boat.v *= 0.5; sailing = false; } }
+					for (const L of lands) { const d = Math.hypot(nx - L.x, ny - L.y); const rr = L.r * 1.25 + 0.9; if (d < rr) { nx = L.x + (nx - L.x) / d * rr; ny = L.y + (ny - L.y) / d * rr; boat.v *= 0.7; } } // 해안선 따라 미끄러진다. 항해는 끊지 않는다
 					const lim = WORLD / 2 - 6; nx = Math.max(-lim, Math.min(lim, nx)); ny = Math.max(-lim, Math.min(lim, ny));
 					boat.x = nx; boat.y = ny;
 					cam.x += (boat.x - cam.x) * Math.min(1, dt * 2); cam.y += (boat.y - cam.y) * Math.min(1, dt * 2);
