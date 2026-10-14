@@ -74,8 +74,10 @@ const logs = posts.map((p) => {
 	return { id: `log-${p.id}`, x: cur.x + Math.cos(a) * r, y: cur.y + Math.sin(a) * r, kind: 2, title: p.data.title, date: p.data.pubDate.toISOString().slice(0, 10).replaceAll('-', '.'), href: `/blog/${p.id}/` };
 });
 const bottles = [...values, ...logs];
+// 섬 로고: public/sea/logo-<섬 id>.(png|svg|webp) 가 있으면 항해일지 머리에 붙는다
+const logoOf = (id: string) => ['png', 'svg', 'webp'].map((e) => `logo-${id}.${e}`).find((f) => existsSync(`public/sea/${f}`));
 const postTitle = Object.fromEntries(posts.map((p) => [p.id, p.data.title]));
-const islandsOut = islands.map((I) => ({ ...I, posts: I.posts.filter((s) => postTitle[s]).map((s) => ({ title: postTitle[s], href: `/blog/${s}/` })), note: I === yard ? `커밋 ${commits}개 · 그림 ${imageCount}장 · 글 ${posts.length}편 · 건조 ${Math.max(1, Math.floor((Date.now() - new Date(BUILT_FROM).valueOf()) / 864e5))}일째` : '' }));
+const islandsOut = islands.map((I) => ({ ...I, logo: logoOf(I.id) ? `/sea/${logoOf(I.id)}` : '', posts: I.posts.filter((s) => postTitle[s]).map((s) => ({ title: postTitle[s], href: `/blog/${s}/` })), note: I === yard ? `커밋 ${commits}개 · 그림 ${imageCount}장 · 글 ${posts.length}편 · 건조 ${Math.max(1, Math.floor((Date.now() - new Date(BUILT_FROM).valueOf()) / 864e5))}일째` : '' }));
 const hasCv = existsSync('public/cv.pdf');
 // 선실에 걸어둘 것. 책은 비워두면 안 보인다.
 const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 같이 만드는 중', 'Kotlin · WebFlux · Redis · Kafka 위에서 실시간 서버를 굴리는 중'] };
@@ -129,6 +131,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			.paper { background: #f1e6cf; color: #2a2118; padding: 1.4rem 1.6rem 1.6rem; }
 			.paper.bg { background: var(--paper) center / cover, #f1e6cf; }
 			.isle img { display: block; width: min(60%, 260px); margin: 0 auto 0.6rem; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.25)); }
+			.isle .head { display: flex; align-items: center; gap: 0.8em; } .isle .logo { width: 48px; height: 48px; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.6); padding: 4px; } .isle .logo[hidden] { display: none; }
 			.isle .d { font-family: var(--mono); font-size: 0.82rem; opacity: 0.7; margin-top: 0.3em; }
 			.isle .role { margin-top: 0.8em; font-size: 0.98rem; }
 			.isle .works { list-style: none; padding: 0; }
@@ -183,7 +186,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				<button class="x" id="ix" aria-label="닫기">×</button>
 				<img id="ii" alt="" />
 				<div class="k">ISLAND <span id="in"></span> · 항해일지</div>
-				<h2 id="it"></h2><div class="d" id="idate"></div>
+				<div class="head"><img class="logo" id="ilogo" alt="" hidden /><div><h2 id="it"></h2><div class="d" id="idate"></div></div></div>
 				<p class="role" id="ir"></p>
 				<div class="note" id="inote"></div>
 				<div class="k" id="iwk">여기서 한 일</div>
@@ -383,7 +386,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				function openIsle(I) {
 					// 같은 섬에 두 번 머물렀으면 몇 번째 정박인지에 따라 그때 한 일만 보여준다
 					const visit = route.slice(0, stage + 1).filter((P) => P === I).length || 1, stay = I.stays && I.stays[Math.min(visit, I.stays.length) - 1];
-					$('ii').src = `/sea/island-${I.id}.webp`;
+					$('ii').src = `/sea/island-${I.id}.webp`; const lg = $('ilogo'); lg.hidden = !I.logo; if (I.logo) lg.src = I.logo;
 					$('it').textContent = I.title; $('idate').textContent = stay ? stay.date : I.date; $('ir').textContent = stay ? stay.role : I.role;
 					$('inote').textContent = I.note || ''; const lb = I.labels || {}; $('iwk').textContent = lb.works || '여기서 한 일'; $('isk').textContent = lb.stack || 'STACK'; $('ipk').textContent = lb.posts || '여기서 쓴 글';
 					$('in').textContent = I.id === 'S' ? '조선소' : `${route.filter((P, i, a) => a.indexOf(P) === i).indexOf(I) + 1}/${route.filter((P, i, a) => a.indexOf(P) === i).length}`;
