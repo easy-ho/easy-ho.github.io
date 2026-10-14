@@ -1,4 +1,6 @@
 ---
+import { getCollection } from 'astro:content';
+import { existsSync } from 'node:fs';
 import BaseHead from '../../components/BaseHead.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
@@ -11,15 +13,28 @@ const islands = [
 ];
 const route = ['A', 'B', 'A', 'C', 'D'].map((id) => islands.find((I) => I.id === id)!);
 const SAIL_FROM = '2018-08-01';
+// 일지 유리병 = 블로그 글. 새 글이 올라오면 병이 하나 더 떠다닌다. 위치는 글 id 해시로 정하고 육지는 피한다.
+const hash = (t: string) => { let h = 2166136261; for (const c of t) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+const posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const logs = posts.map((p) => {
+	const h = hash(p.id); let a = (h % 360) * Math.PI / 180, r = 28 + ((h >>> 9) % 40), x = 0, y = 0;
+	for (let k = 0; k < 12; k++) { x = Math.cos(a) * r; y = Math.sin(a) * r; if (islands.every((I) => Math.hypot(x - I.x, y - I.y) > I.r + 7)) break; a += 0.7; }
+	return { id: `log-${p.id}`, x, y, kind: 2, title: p.data.title, date: p.data.pubDate.toISOString().slice(0, 10).replaceAll('-', '.'), href: `/blog/${p.id}/` };
+});
+const hasCv = existsSync('public/cv.pdf');
+// 선실에 걸어둘 것. 책은 비워두면 안 보인다.
+const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 같이 만드는 중', 'Kotlin · WebFlux · Redis · Kafka 위에서 실시간 서버를 굴리는 중'] };
+
 // 유리병 = 나에 대한 조각들. 바다에 떠다니고, 건지면 모인다.
-const bottles = [
+const intro_bottles = [
 	{ id: 'b1', x: 30, y: -40, text: '8년 차 백엔드. Kotlin·Java(Spring, WebFlux)와 Python 사이를 오간다.' },
 	{ id: 'b2', x: 52, y: 8, text: '기능 하나보다 플랫폼을 만들고 넓히는 문제를 좋아한다. 도메인이 늘어도 다시 만들지 않는 계층.' },
 	{ id: 'b3', x: 18, y: 56, text: '모든 변경은 산식으로 먼저 계산하고 실측으로 확인한 뒤 반영한다.' },
 	{ id: 'b4', x: -8, y: -62, text: '장애는 추측하지 않는다. 재현 실험으로 원인을 특정한다.' },
 	{ id: 'b5', x: 62, y: -28, text: '요청이 한순간에 몰리는 이벤트에서도 정원·보상·판정이 어긋나지 않게. 원자 연산과 멱등이 기본.' },
 	{ id: 'b6', x: 44, y: 46, text: 'AI는 서비스에도 쓰고 일하는 방식에도 쓴다. 이 블로그와 이 바다도 Claude Code와 같이 만들었다.' },
-];
+].map((b) => ({ ...b, kind: 1 }));
+const bottles = [...intro_bottles, ...logs];
 ---
 
 <!doctype html>
@@ -51,6 +66,20 @@ const bottles = [
 			.toast { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); width: min(90vw, 460px); background: rgba(0,20,30,0.55); backdrop-filter: blur(6px); border-radius: 12px; padding: 0.9em 1.1em; font-size: 0.95rem; line-height: 1.6; text-shadow: none; opacity: 0; transition: opacity 0.4s, translate 0.4s; translate: 0 8px; }
 			.toast.on { opacity: 1; translate: 0 0; }
 			.toast .k { display: block; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.2em; opacity: 0.8; margin-bottom: 0.4em; }
+			.toast a { color: #fde68a; font-family: var(--mono); font-size: 0.82rem; margin-left: 0.6em; }
+			.cabin { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(2,10,14,0.55); backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.35s; text-shadow: none; }
+			.cabin.on { opacity: 1; pointer-events: auto; }
+			.cabin .room { width: min(92vw, 560px); max-height: 86vh; overflow: auto; background: linear-gradient(160deg, #3a2a1e, #1f1611); border: 1px solid rgba(255,220,160,0.25); border-radius: 14px; padding: 1.4rem 1.5rem; box-shadow: 0 30px 80px rgba(0,0,0,0.6); color: #f3e9d6; transform: scale(0.96); transition: transform 0.35s; }
+			.cabin.on .room { transform: none; }
+			.cabin h2 { margin: 0; font-size: 1.3rem; letter-spacing: -0.02em; }
+			.cabin .k { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.2em; opacity: 0.7; margin: 1.3em 0 0.4em; }
+			.cabin p { margin: 0; line-height: 1.65; font-size: 0.95rem; }
+			.cabin ul { margin: 0; padding-left: 1.1em; line-height: 1.7; font-size: 0.95rem; }
+			.cabin a { color: #fde68a; }
+			.cabin .row { display: flex; gap: 0.6em; flex-wrap: wrap; margin-top: 0.4em; }
+			.cabin .row a, .cabin .row span { font-family: var(--mono); font-size: 0.82rem; padding: 0.35em 0.9em; border: 1px solid rgba(255,220,160,0.4); border-radius: 999px; text-decoration: none; color: inherit; }
+			.cabin .x { position: absolute; right: 1rem; top: 0.8rem; background: none; border: 0; color: inherit; font-size: 1.4rem; cursor: pointer; }
+			.cabin .room { position: relative; }
 			.help { position: absolute; left: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; }
 			.stat { position: absolute; right: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; text-align: right; pointer-events: auto; }
 			/* 지도 */
@@ -69,10 +98,23 @@ const bottles = [
 			<div class="intro" id="intro"><div><h1>easyho.log</h1><p>다녀온 회사는 섬이 됐다. 배는 아직 항해 중이고,<br />다음 섬은 어디가 될지 모른다.</p><div class="go">바다를 눌러 출항</div></div></div>
 			<div class="near" id="near"><div class="k">ISLAND · 항해일지</div><div class="t" id="nt"></div><div class="d" id="nd"></div><p class="p" id="np"></p></div>
 			<div class="mirage" id="mirage">다음 섬 ?</div>
-			<div class="toast" id="toast"><span class="k" id="tk"></span><span id="tt"></span></div>
+			<div class="toast" id="toast"><span class="k" id="tk"></span><span id="tt"></span><a id="ta" href="#" hidden>읽기 →</a></div>
 			<div class="map" id="map"><canvas id="mc"></canvas><div class="z" id="mz">M · 크게</div></div>
-			<div class="help">클릭 · 터치로 항해 · 지도를 눌러도 간다</div>
+			<div class="help">클릭 · 터치로 항해 · 배를 두 번 누르면 선실</div>
 			<div class="stat" id="stat"></div>
+			<div class="cabin" id="cabin"><div class="room">
+				<button class="x" id="cx" aria-label="닫기">×</button>
+				<h2>선실</h2>
+				<div class="k">CAPTAIN</div>
+				<p>8년 차 백엔드. 웹툰 플랫폼에서 뷰어·추천·게이미피케이션·실시간 서버를 만든다. 스타트업의 첫 번째 개발자로 시작해 런칭, MSA 전환, 리뉴얼까지 한 바퀴 돌아봤다. 요청이 한순간에 몰려도 정원·보상·판정이 어긋나지 않게 하는 일을 좋아한다.</p>
+				<div class="row"><a href="mailto:dev.easyho@gmail.com">dev.easyho@gmail.com</a><a href="https://github.com/easy-ho">GitHub</a>{hasCv && <a href="/cv.pdf">이력서 PDF</a>}</div>
+				<div class="k">NOW</div>
+				<ul>{captain.now.map((n) => <li>{n}</li>)}{captain.reading && <li>읽는 책 · {captain.reading}</li>}</ul>
+				<div class="k">주운 일지</div>
+				<ul id="logs"></ul>
+				<div class="k">LOG</div>
+				<p id="clog"></p>
+			</div></div>
 		</div>
 		<div class="fallback" id="fallback"><ul class="post-list">{islands.map((m) => <li><span>{m.date}</span>{m.title}</li>)}</ul></div>
 		<script define:vars={{ islands, route, bottles, SAIL_FROM }}>
@@ -80,13 +122,13 @@ const bottles = [
 			const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
 			if (!gl) { document.getElementById('fallback').style.display = 'block'; document.getElementById('hud').style.display = 'none'; canvas.remove(); document.body.style.overflow = 'auto'; }
 			else {
-				const MAXI = 8, MAXR = 8, MAXB = 8, NT = 24, WORLD = 160; // 지도 범위: [-80, 80]
+				const MAXI = 8, MAXR = 8, MAXB = 32, NT = 24, WORLD = 160; // 지도 범위: [-80, 80]
 				const vs = `#version 300 es
 				void main(){ vec2 v = vec2((gl_VertexID<<1)&2, gl_VertexID&2); gl_Position = vec4(v*2.-1.,0.,1.); }`;
 				const fs = `#version 300 es
 				precision highp float; out vec4 o;
 				uniform vec2 R; uniform float T; uniform vec2 CAM; uniform float ZOOM; uniform vec2 BOAT; uniform float HEAD; uniform vec2 TGT; uniform float DAY; uniform vec2 MON;
-				uniform int NI; uniform vec4 ISL[${MAXI}]; uniform int NR; uniform vec2 ROUTE[${MAXR}]; uniform vec3 MIR; uniform int NB; uniform vec3 BTL[${MAXB}];
+				uniform int NI; uniform vec4 ISL[${MAXI}]; uniform float LIT[${MAXI}]; uniform vec3 ANC; uniform int NR; uniform vec2 ROUTE[${MAXR}]; uniform vec3 MIR; uniform int NB; uniform vec3 BTL[${MAXB}];
 				uniform vec2 TRAIL[${NT}]; uniform sampler2D FOG; uniform float WORLD;
 				float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }
 				float noise(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f); return mix(mix(hash(i),hash(i+vec2(1,0)),f.x), mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x), f.y); }
@@ -124,9 +166,11 @@ const bottles = [
 						col = land;
 					}
 					// 등대 불빛: 밤에 회전, 낮엔 희미하게
-					for(int i=0;i<NI;i++){ vec2 lq = p - ISL[i].xy; float ang = atan(lq.y, lq.x); float beam = T*0.7 + ISL[i].w; float da = abs(atan(sin(ang-beam), cos(ang-beam))); float L = length(lq); float b = smoothstep(0.12, 0., da) * smoothstep(16., 1., L) * step(0.3, L); col += vec3(1.,0.95,0.7) * b * mix(0.08, 0.5, 1.-DAY); }
+					for(int i=0;i<NI;i++){ vec2 lq = p - ISL[i].xy; float ang = atan(lq.y, lq.x); float beam = T*0.7 + ISL[i].w; float da = abs(atan(sin(ang-beam), cos(ang-beam))); float L = length(lq); float b = smoothstep(0.12, 0., da) * smoothstep(16., 1., L) * step(0.3, L); col += vec3(1.,0.95,0.7) * b * mix(mix(0.08, 0.5, 1.-DAY), mix(0.4, 0.9, 1.-DAY), LIT[i]); col += vec3(1.,0.85,0.5) * LIT[i] * smoothstep(1.4, 0., L) * 0.7 * (0.8 + 0.2*sin(T*3.)); }
 					// 유리병
-					for(int i=0;i<NB;i++){ if (BTL[i].z < 0.5) continue; vec2 bq = p - BTL[i].xy - vec2(0.5*sin(T*0.6+float(i)), 0.4*cos(T*0.5+float(i)*1.7)); float bd = length(bq/vec2(0.55,0.32)) - 1.; col = mix(col, vec3(0.45,0.8,0.65), smoothstep(0.06,-0.06,bd)); col += vec3(1.) * smoothstep(0.1,0.,length(bq-vec2(0.18,0.1))-0.06); float ring = abs(length(bq) - 1.2 - 0.3*sin(T*2.+float(i))); col += vec3(1.) * smoothstep(0.1,0.,ring)*0.25; }
+					for(int i=0;i<NB;i++){ if (BTL[i].z < 0.5) continue; vec2 bq = p - BTL[i].xy - vec2(0.5*sin(T*0.6+float(i)), 0.4*cos(T*0.5+float(i)*1.7)); float bd = length(bq/vec2(0.55,0.32)) - 1.; vec3 glass = BTL[i].z > 1.5 ? vec3(0.85,0.62,0.3) : vec3(0.45,0.8,0.65); col = mix(col, glass, smoothstep(0.06,-0.06,bd)); if (BTL[i].z > 1.5) col = mix(col, vec3(0.96,0.92,0.8), smoothstep(0.04,-0.04, length(bq/vec2(0.3,0.16)) - 1.)); col += vec3(1.) * smoothstep(0.1,0.,length(bq-vec2(0.18,0.1))-0.06); float ring = abs(length(bq) - 1.2 - 0.3*sin(T*2.+float(i))); col += vec3(1.) * smoothstep(0.1,0.,ring)*0.25; }
+					// 닻: 상륙 순간 퍼지는 링
+					float at = T - ANC.z; if (at > 0. && at < 1.6) { float ar = abs(length(p - ANC.xy) - at * 4.); col += vec3(1.) * smoothstep(0.25, 0., ar) * (1. - at / 1.6) * 0.6; }
 					// 다음 섬(신기루): 늘 안개 너머에 있다
 					float md = island(p, vec4(MIR.xy, 3.2, 4.)); col = mix(col, mix(col, vec3(0.5,0.6,0.6), 0.5), smoothstep(0.1,-0.1,md));
 					// 지나온 항로: 점선
@@ -166,11 +210,14 @@ const bottles = [
 				gl.uniform1f(U('DAY'), day);
 				// 저장: 본 곳, 건진 병
 				const KEY = 'easyho.sea';
-				let save = { bottles: [] }; try { save = { ...save, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch {}
-				const got = new Set(save.bottles);
-				const persist = () => { try { localStorage.setItem(KEY, JSON.stringify({ bottles: [...got] })); } catch {} };
+				let save = { bottles: [], lit: [] }; try { save = { ...save, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch {}
+				const got = new Set(save.bottles), lit = new Set(save.lit);
+				const persist = () => { try { localStorage.setItem(KEY, JSON.stringify({ bottles: [...got], lit: [...lit] })); } catch {} };
+				const litArr = new Float32Array(MAXI);
+				const syncLit = () => { islands.forEach((I, i) => (litArr[i] = lit.has(I.id) ? 1 : 0)); gl.uniform1fv(U('LIT'), litArr); };
+				syncLit(); let anchorAt = { x: 0, y: 0, t: -9 };
 				const btlArr = new Float32Array(MAXB * 3);
-				const syncBottles = () => { bottles.forEach((B, i) => btlArr.set([B.x, B.y, got.has(B.id) ? 0 : 1], i * 3)); gl.uniform3fv(U('BTL'), btlArr); };
+				const syncBottles = () => { bottles.forEach((B, i) => btlArr.set([B.x, B.y, got.has(B.id) ? 0 : B.kind], i * 3)); gl.uniform3fv(U('BTL'), btlArr); };
 				gl.uniform1i(U('NB'), bottles.length); syncBottles();
 				// 안개 지도 텍스처
 				const fogC = document.createElement('canvas'); fogC.width = fogC.height = 256; const fctx = fogC.getContext('2d');
@@ -192,19 +239,45 @@ const bottles = [
 				let tgt = { x: 0, y: 0 }, sailing = false, near = null;
 				const trail = new Float32Array(NT * 2);
 				const $ = (id) => document.getElementById(id);
-				const intro = $('intro'), nearEl = $('near'), nt = $('nt'), nd = $('nd'), np = $('np'), stat = $('stat'), mirEl = $('mirage'), toast = $('toast'), tk = $('tk'), tt = $('tt'), map = $('map'), mc = $('mc'), mz = $('mz');
+				const intro = $('intro'), nearEl = $('near'), nt = $('nt'), nd = $('nd'), np = $('np'), stat = $('stat'), mirEl = $('mirage'), toast = $('toast'), tk = $('tk'), tt = $('tt'), ta = $('ta'), map = $('map'), mc = $('mc'), mz = $('mz'), cabin = $('cabin');
 				const ZOOM = innerWidth < 700 ? 30 : 38;
 				const lands = islands;
 				function goTo(x, y) { tgt = { x, y }; sailing = true; intro.classList.add('off'); }
+				const toScreen = (x, y) => [innerWidth / 2 + (x - cam.x) / (ZOOM * 0.5) * (innerHeight / 2), innerHeight / 2 - (y - cam.y) / (ZOOM * 0.5) * (innerHeight / 2)];
+				let lastTap = 0;
 				canvas.addEventListener('pointerdown', (e) => {
 					if (map.classList.contains('big')) { map.classList.remove('big'); mz.textContent = 'M · 크게'; return; }
+					const [bx, by] = toScreen(boat.x, boat.y);
+					if (Math.hypot(e.clientX - bx, e.clientY - by) < 44) { if (performance.now() - lastTap < 400) openCabin(); lastTap = performance.now(); return; }
 					const ux = (e.clientX / innerWidth * 2 - 1) * (innerWidth / innerHeight), uy = -(e.clientY / innerHeight * 2 - 1);
 					goTo(cam.x + ux * ZOOM * 0.5, cam.y + uy * ZOOM * 0.5);
 				});
-				// 소리: 병 건질 때만, 짧게
-				let ac; function chime() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch { return; } const t = ac.currentTime; [880, 1320].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(0, t + i * 0.09); g.gain.linearRampToValueAtTime(0.05, t + i * 0.09 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.5); o.connect(g).connect(ac.destination); o.start(t + i * 0.09); o.stop(t + i * 0.09 + 0.5); }); }
+				// 소리: 전부 합성. 병 건질 때 종소리, 상륙할 때 닻 사슬
+				let ac;
+				function tone(f, t0, dur, type = 'sine', g = 0.05) { const o = ac.createOscillator(), v = ac.createGain(); o.type = type; o.frequency.value = f; v.gain.setValueAtTime(0, t0); v.gain.linearRampToValueAtTime(g, t0 + 0.01); v.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(v).connect(ac.destination); o.start(t0); o.stop(t0 + dur); }
+				function noise(t0, dur, freq, q, g) { const b = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); const src = ac.createBufferSource(), f = ac.createBiquadFilter(), v = ac.createGain(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q; v.gain.value = g; src.buffer = b; src.connect(f).connect(v).connect(ac.destination); src.start(t0); }
+				function sfx(kind) {
+					try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
+					const t = ac.currentTime;
+					if (kind === 'chime') [880, 1320].forEach((f, i) => tone(f, t + i * 0.09, 0.5));
+					if (kind === 'anchor') { for (let i = 0; i < 10; i++) noise(t + i * 0.07, 0.05, 1800 + (i % 3) * 400, 6, 0.12); noise(t + 0.75, 0.5, 300, 1.5, 0.2); tone(70, t + 0.75, 0.9, 'sine', 0.12); }
+				}
+				const chime = () => sfx('chime');
 				let toastT;
-				function showToast(k, text) { tk.textContent = k; tt.textContent = text; toast.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), 6500); }
+				function showToast(k, text, href) { tk.textContent = k; tt.textContent = text; ta.hidden = !href; if (href) ta.href = href; toast.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('on'), 6500); }
+				// 선실
+				function openCabin() {
+					const logsEl = $('logs'); logsEl.innerHTML = '';
+					const found = bottles.filter((B) => B.kind === 2 && got.has(B.id));
+					if (!found.length) logsEl.innerHTML = '<li>아직 주운 일지가 없다. 바다 어딘가에 떠 있다.</li>';
+					found.forEach((B) => { const li = document.createElement('li'); const a = document.createElement('a'); a.href = B.href; a.textContent = B.title; li.append(a, ` · ${B.date}`); logsEl.appendChild(li); });
+					const days = Math.floor((Date.now() - new Date(SAIL_FROM)) / 864e5);
+					$('clog').textContent = `항해 ${days.toLocaleString()}일째 · 섬 ${islands.length} 중 등대 ${lit.size}개 켬 · 유리병 ${got.size}/${bottles.length}`;
+					cabin.classList.add('on');
+				}
+				const closeCabin = () => cabin.classList.remove('on');
+				$('cx').addEventListener('click', closeCabin);
+				cabin.addEventListener('pointerdown', (e) => { if (e.target === cabin) closeCabin(); });
 				// 처음: 본 곳 복원
 				for (let i = 0; i < route.length - 1; i++) { const a = route[i], b = route[i + 1], n = Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 5); for (let k = 0; k <= n; k++) reveal(a.x + (b.x - a.x) * k / n, a.y + (b.y - a.y) * k / n, 11); }
 				reveal(boat.x, boat.y);
@@ -225,7 +298,7 @@ const bottles = [
 						mctx.beginPath(); mctx.arc(px(L.x), py(L.y), Math.max(2.5, L.r * k), 0, 7); mctx.fillStyle = L === cur ? '#e9c46a' : '#6fbf73'; mctx.fill();
 						if (big) { mctx.fillStyle = '#fff'; mctx.textAlign = L.x < 0 ? 'left' : 'right'; mctx.fillText(L.title, px(L.x) + (L.x < 0 ? 1 : -1) * (L.r * k + 6), py(L.y)); }
 					}
-					for (const B of bottles) { if (!got.has(B.id)) continue; mctx.fillStyle = '#9fe3c6'; mctx.fillRect(px(B.x) - 2, py(B.y) - 2, 4, 4); }
+					for (const B of bottles) { if (!got.has(B.id)) continue; mctx.fillStyle = B.kind === 2 ? '#e9c46a' : '#9fe3c6'; mctx.fillRect(px(B.x) - 2, py(B.y) - 2, 4, 4); }
 					mctx.fillStyle = 'rgba(255,255,255,0.7)'; mctx.textAlign = 'center'; mctx.fillText('?', px(mirage.x), py(mirage.y));
 					if (sailing) { mctx.strokeStyle = 'rgba(255,255,255,0.8)'; mctx.lineWidth = 1; mctx.beginPath(); mctx.arc(px(tgt.x), py(tgt.y), 4, 0, 7); mctx.stroke(); }
 					mctx.save(); mctx.translate(px(boat.x), py(boat.y)); mctx.rotate(-boat.h); mctx.fillStyle = '#fff'; mctx.beginPath(); mctx.moveTo(6, 0); mctx.lineTo(-4, 4); mctx.lineTo(-4, -4); mctx.closePath(); mctx.fill(); mctx.restore();
@@ -239,7 +312,7 @@ const bottles = [
 					goTo(Math.max(-74, Math.min(74, x)), Math.max(-74, Math.min(74, y)));
 					if (map.classList.contains('big')) { map.classList.remove('big'); mz.textContent = 'M · 크게'; }
 				});
-				addEventListener('keydown', (e) => { if (e.key === 'm' || e.key === 'M') { map.classList.toggle('big'); mz.textContent = map.classList.contains('big') ? '' : 'M · 크게'; } if (e.key === 'Escape') { map.classList.remove('big'); mz.textContent = 'M · 크게'; } });
+				addEventListener('keydown', (e) => { if (e.key === 'm' || e.key === 'M') { map.classList.toggle('big'); mz.textContent = map.classList.contains('big') ? '' : 'M · 크게'; } if (e.key === 'Escape') { map.classList.remove('big'); mz.textContent = 'M · 크게'; closeCabin(); } });
 				let last = performance.now(), t0 = last, trailT = 0, mapT = 0;
 				function step(dt, now) {
 					if (sailing) {
@@ -261,14 +334,19 @@ const bottles = [
 					for (const L of lands) { const d = Math.hypot(boat.x - L.x, boat.y - L.y) - L.r * 1.25; if (d < 3.2 && d < bd) { bd = d; best = L; } }
 					if (best !== near) {
 						near = best; nearEl.classList.toggle('on', !!near); if (near) intro.classList.add('off');
-						if (near) { nt.textContent = near.title; nd.textContent = near.date; np.textContent = near.body; }
+						if (near) {
+							nt.textContent = near.title; nd.textContent = near.date; np.textContent = near.body;
+							// 상륙: 닻 내리는 소리, 링, 등대 점등
+							sfx('anchor'); anchorAt = { x: boat.x, y: boat.y, t: (now - t0) / 1000 }; sailing = false; boat.v *= 0.3;
+							if (!lit.has(near.id)) { lit.add(near.id); persist(); syncLit(); }
+						}
 					}
 					// 유리병 건지기
-					for (const B of bottles) if (!got.has(B.id) && Math.hypot(boat.x - B.x, boat.y - B.y) < 2.2) { got.add(B.id); persist(); syncBottles(); chime(); showToast(`유리병 편지 ${got.size}/${bottles.length}`, B.text); }
+					for (const B of bottles) if (!got.has(B.id) && Math.hypot(boat.x - B.x, boat.y - B.y) < 2.2) { got.add(B.id); persist(); syncBottles(); chime(); if (B.kind === 2) showToast(`배 위에서 쓴 일지 · ${B.date}`, B.title, B.href); else showToast(`유리병 편지 ${got.size}/${bottles.length}`, B.text); }
 					// 신기루: 다가가면 그만큼 물러난다
 					const mdx = mirage.x - boat.x, mdy = mirage.y - boat.y, mdist = Math.hypot(mdx, mdy);
 					if (mdist < 15) { const ang = Math.atan2(mdy, mdx); let mx = boat.x + Math.cos(ang) * 24, my = boat.y + Math.sin(ang) * 24; if (Math.abs(mx) > 72 || Math.abs(my) > 72) { const a2 = Math.atan2(-boat.y, -boat.x) + Math.PI; mx = boat.x + Math.cos(a2 + 1.2) * 24; my = boat.y + Math.sin(a2 + 1.2) * 24; } mirage = { x: Math.max(-74, Math.min(74, mx)), y: Math.max(-74, Math.min(74, my)) }; if (now / 1000 - mirageT > 8) { mirageT = now / 1000; showToast('다음 섬', '가까워지면 멀어진다. 아직 안개 속이다.'); } }
-					const sx = innerWidth / 2 + (mirage.x - cam.x) / (ZOOM * 0.5) * (innerHeight / 2), sy = innerHeight / 2 - (mirage.y - cam.y) / (ZOOM * 0.5) * (innerHeight / 2);
+					const [sx, sy] = toScreen(mirage.x, mirage.y);
 					mirEl.style.left = `${sx}px`; mirEl.style.top = `${sy - 40}px`; mirEl.classList.toggle('on', sx > 0 && sx < innerWidth && sy > 0 && sy < innerHeight);
 					const days = Math.floor((Date.now() - new Date(SAIL_FROM)) / 864e5);
 					stat.textContent = `항해 ${days.toLocaleString()}일째 · ${boat.v.toFixed(1)} kn · 유리병 ${got.size}/${bottles.length}`;
@@ -281,7 +359,7 @@ const bottles = [
 					gl.uniform2f(U('R'), canvas.width, canvas.height); gl.uniform1f(U('T'), t);
 					gl.uniform2f(U('CAM'), cam.x, cam.y); gl.uniform1f(U('ZOOM'), ZOOM); gl.uniform2f(U('BOAT'), boat.x, boat.y); gl.uniform1f(U('HEAD'), boat.h);
 					gl.uniform2f(U('TGT'), sailing ? tgt.x : 1e4, sailing ? tgt.y : 1e4); gl.uniform2fv(U('TRAIL'), trail);
-					gl.uniform2f(U('MON'), Math.cos(t * 0.05) * 66, Math.sin(t * 0.05) * 66); gl.uniform3f(U('MIR'), mirage.x, mirage.y, 0); // 가장자리를 천천히 도는 그림자, 신기루
+					gl.uniform2f(U('MON'), Math.cos(t * 0.05) * 66, Math.sin(t * 0.05) * 66); gl.uniform3f(U('MIR'), mirage.x, mirage.y, 0); gl.uniform3f(U('ANC'), anchorAt.x, anchorAt.y, anchorAt.t); // 가장자리를 천천히 도는 그림자, 신기루
 					gl.drawArrays(gl.TRIANGLES, 0, 3); requestAnimationFrame(frame);
 				}
 				requestAnimationFrame(frame);

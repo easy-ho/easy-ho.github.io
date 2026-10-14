@@ -41,3 +41,4 @@ Consult these guides before working on related tasks:
 - 커밋은 이 저장소의 로컬 git 설정(EasyHo / dev.easyho@gmail.com)으로만 한다. 전역 설정을 바꾸지 않는다.
 
 - 포스트 frontmatter에 `category`(카드팩 단위)를 넣는다. `grade`(C/R/SR/SSR)는 생략하면 자동 산정.
+- `/lab/sea/` 선실: `public/cv.pdf`를 두면 이력서 버튼이 생긴다(실명·전화번호 없는 판으로). 읽는 책은 sea.astro의 `captain.reading`에 적으면 보인다.
