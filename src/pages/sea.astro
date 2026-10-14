@@ -5,11 +5,11 @@ import { execSync } from 'node:child_process';
 import BaseHead from '../components/BaseHead.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 
-// 섬 = 다녀온 회사. 회사명·서비스명·사업 수치는 쓰지 않는다. 항로는 시간순이고, 첫 섬에는 두 번 머물렀다.
+// 섬 = 다녀온 회사. 포트폴리오처럼 회사 워드마크(mark)와 회사명(company)을 쓴다. 사업 수치는 쓰지 않는다. 항로는 시간순이고, 첫 섬에는 두 번 머물렀다.
 // 방문자는 첫 섬에서 출항해 시간순으로 항로를 따라간다. 닿을 때마다 등대가 켜지고 지나온 길이 그려지고, 그 섬에서 한 일이 펼쳐진다.
 const islands = [
-	{ id: 'A', x: -48, y: -46, r: 3.6, seed: 2, title: '영양제 추천 스타트업', date: '2018.08 – 2021.09 · 2022.02 – 2024.10', role: '회사의 첫 번째 개발자로 입사. 런칭부터 MSA 전환까지 하고 한 번 떠났다가, 돌아와서 리뉴얼을 리드했다.',
-		stays: [{ date: '2018.08 – 2021.09', role: '회사의 첫 번째 개발자로 입사했다. 초기 모델부터 런칭, MSA 전환, 협업 인프라까지. 3년을 머물고 한 번 떠난다.' }, { date: '2022.02 – 2024.10 · 두 번째 정박', role: '다섯 달 만에 돌아왔다. 이번엔 쇼핑몰 리뉴얼을 리드하고 데이터 동기화와 멀티테넌시를 깔았다. 여기서 두 해 반을 더 머물렀다.' }],
+	{ id: 'A', x: -48, y: -46, r: 3.6, seed: 2, title: 'Vi~meal', mark: 'Vi~meal', markColor: '#4fa3e3', company: '와이즈셀렉션(건강비밀)', date: '2018.08 ~ 2021.09 · 2022.02 ~ 2024.10', role: '회사의 첫 번째 개발자로 입사. 런칭부터 MSA 전환까지 하고 한 번 떠났다가, 돌아와서 리뉴얼을 리드했다.',
+		stays: [{ date: '18.08 ~ 21.09 (3년 1개월)', role: '회사의 첫 번째 개발자로 입사했다. 초기 모델부터 런칭, MSA 전환, 협업 인프라까지. 3년을 머물고 한 번 떠난다.' }, { date: '22.02 ~ 24.10 (2년 8개월) · 두 번째 정박', role: '다섯 달 만에 돌아왔다. 이번엔 쇼핑몰 리뉴얼을 리드하고 데이터 동기화와 멀티테넌시를 깔았다. 여기서 두 해 반을 더 머물렀다.' }],
 		works: [
 			{ stay: 1, when: '2018 – 2019', name: '서비스 런칭', desc: '영양제 추천 알고리즘과 성분 시각화(특허 등록), 간편결제·PG 연동과 빌링, 주문→결제 흐름, 쿠폰·마일리지, 주문·배송·제품 백오피스.' },
 			{ stay: 1, when: '2019 – 2020', name: 'MSA 전환', desc: '모놀리식을 Eureka·Zuul 기반 마이크로서비스로 분리. Docker Swarm 빌드·배포 자동화와 사용량 기반 오토스케일, ELK 로그 통합과 행동 로그 대시보드.' },
@@ -18,18 +18,18 @@ const islands = [
 			{ stay: 2, when: '2023', name: '데이터 동기화·운영', desc: '협력사마다 늘어난 DB를 Kafka Connect(CDC)로 실시간 동기화. ELK 클러스터 업그레이드와 Filebeat. Redis 캐싱으로 자가진단 알고리즘 80% 단축.' },
 			{ stay: 2, when: '2024', name: '멀티테넌시 솔루션', desc: '여러 협력사에 같은 서비스를 내주기 위한 통합 서비스 설계. SignedJWT·Refresh Token 인증, S3 업로드 공통 모듈.' },
 		], stack: ['Java', 'Spring Boot', 'Spring Cloud', 'Docker Swarm', 'MySQL · Aurora', 'Redis', 'Kafka', 'ELK', 'Elasticsearch', 'AWS'], posts: [] },
-	{ id: 'B', x: -22, y: -66, r: 2.6, seed: 5, title: 'K-pop 팬 플랫폼', date: '2021.09 – 2022.02', role: '글로벌 팬 플랫폼 백엔드. 생방송 투표가 열리는 순간의 트래픽을 처음 겪었다. 짧게 머물고 첫 섬으로 돌아갔다.',
+	{ id: 'B', x: -22, y: -66, r: 2.6, seed: 5, title: 'mubeat', mark: 'mubeat', markColor: '#1a1a1a', company: '블렌딩(Mubeat)', date: '21.09 ~ 22.02 (6개월)', role: '글로벌 팬 플랫폼 백엔드. 생방송 투표가 열리는 순간의 트래픽을 처음 겪었다. 짧게 머물고 첫 섬으로 돌아갔다.',
 		works: [
 			{ when: '2021 – 2022', name: '아티스트 채널 API', desc: '소식·일정 API. 사용자 제보 → 관리자 검수 → 등록 흐름으로 정확성을 보장.' },
 			{ when: '', name: 'Redis 캐시', desc: '좋아요·회원 맞춤 데이터에 캐시를 넣어 투표 피크의 서버 부하와 불필요한 호출을 줄였다.' },
 			{ when: '', name: '클라우드 비용 배치', desc: 'AWS 약정(Savings Plans) 만료를 주기 점검해 한 달 전에 Slack으로 알리는 배치.' },
 		], stack: ['Java', 'Spring', 'Python', 'Redis', 'MySQL', 'AWS'], posts: [] },
-	{ id: 'C', x: -58, y: -4, r: 2.4, seed: 8, title: '의료 플랫폼', date: '2024.12 – 2025.02', role: '병원 SaaS와 환자 앱을 위한 통합 인증을 설계했다. 석 달 머문 작은 섬.',
+	{ id: 'C', x: -58, y: -4, r: 2.4, seed: 8, title: 'NAAFAA', mark: 'NAAFAA', markColor: '#2a9d8f', company: '로봇앤컴(NAAFAA)', date: '24.12 ~ 25.02 (3개월)', role: '병원 SaaS와 환자 앱을 위한 통합 인증을 설계했다. 석 달 머문 작은 섬.',
 		works: [
 			{ when: '2024 – 2025', name: 'Keycloak 통합 인증', desc: '병원별 독립 인증 클라이언트를 가진 멀티테넌시 구조. Realm · Clients · Groups · Roles 설계.' },
 			{ when: '', name: '관리 API', desc: 'Keycloak Admin API를 감싼 API. 병원 관리자가 대시보드 없이 사용자 등록·그룹·권한을 직접 관리.' },
 		], stack: ['Kotlin', 'Spring Boot', 'WebFlux', 'Spring Security', 'PostgreSQL', 'Keycloak'], posts: [] },
-	{ id: 'D', x: -22, y: 24, r: 3.9, seed: 7, title: '웹툰 플랫폼 · 지금 정박 중', date: '2025.04 –', role: '독자가 읽고·사고·발견하는 경로를 고치고, 그 위에 게이미피케이션 서버와 실시간 이벤트 서버를 새로 지었다. 아직 여기 묶여 있는 배.',
+	{ id: 'D', x: -22, y: 24, r: 3.9, seed: 7, title: 'LEZHIN', mark: 'LEZHIN', markColor: '#d9262e', company: '레진엔터테인먼트 (키다리스튜디오)', date: '2025.04 ~ 재직 중', role: '독자가 읽고·사고·발견하는 경로를 고치고, 그 위에 게이미피케이션 서버와 실시간 이벤트 서버를 새로 지었다. 아직 여기 묶여 있는 배.',
 		works: [
 			{ when: '2026', name: '실시간 이벤트 서버', desc: '라이브 채팅과 서바이벌 퀴즈용 WebSocket 서버를 혼자 설계부터 오픈·운영까지. 렌더 그룹 채널 분리로 팬아웃 초당 145만 → 5만 프레임. Lua 원자 연산 선착순 입장으로 정원 초과 0건, 멱등 보상으로 오지급 0건. 부하 테스트 봇 제작.' },
 			{ when: '2025 –', name: '게이미피케이션 서버', desc: '아키텍처 선정부터 구축(WebFlux · R2DBC · Redis · Kafka). 행동 로그 → Kafka → 판정 → 보상 파이프라인으로 출석·미션·룰렛·투표를 확장. 설정 기반 룰렛으로 코드 수정 없이 재개최, 두 리전 동시 운영.' },
@@ -74,10 +74,8 @@ const logs = posts.map((p) => {
 	return { id: `log-${p.id}`, x: cur.x + Math.cos(a) * r, y: cur.y + Math.sin(a) * r, kind: 2, title: p.data.title, date: p.data.pubDate.toISOString().slice(0, 10).replaceAll('-', '.'), href: `/blog/${p.id}/` };
 });
 const bottles = [...values, ...logs];
-// 섬 로고: public/sea/logo-<섬 id>.(png|svg|webp) 가 있으면 항해일지 머리에 붙는다
-const logoOf = (id: string) => ['png', 'svg', 'webp'].map((e) => `logo-${id}.${e}`).find((f) => existsSync(`public/sea/${f}`));
 const postTitle = Object.fromEntries(posts.map((p) => [p.id, p.data.title]));
-const islandsOut = islands.map((I) => ({ ...I, logo: logoOf(I.id) ? `/sea/${logoOf(I.id)}` : '', posts: I.posts.filter((s) => postTitle[s]).map((s) => ({ title: postTitle[s], href: `/blog/${s}/` })), note: I === yard ? `커밋 ${commits}개 · 그림 ${imageCount}장 · 글 ${posts.length}편 · 건조 ${Math.max(1, Math.floor((Date.now() - new Date(BUILT_FROM).valueOf()) / 864e5))}일째` : '' }));
+const islandsOut = islands.map((I) => ({ ...I, posts: I.posts.filter((s) => postTitle[s]).map((s) => ({ title: postTitle[s], href: `/blog/${s}/` })), note: I === yard ? `커밋 ${commits}개 · 그림 ${imageCount}장 · 글 ${posts.length}편 · 건조 ${Math.max(1, Math.floor((Date.now() - new Date(BUILT_FROM).valueOf()) / 864e5))}일째` : '' }));
 const hasCv = existsSync('public/cv.pdf');
 // 선실에 걸어둘 것. 책은 비워두면 안 보인다.
 const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 같이 만드는 중', 'Kotlin · WebFlux · Redis · Kafka 위에서 실시간 서버를 굴리는 중'] };
@@ -131,8 +129,8 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 			.paper { background: #f1e6cf; color: #2a2118; padding: 1.4rem 1.6rem 1.6rem; }
 			.paper.bg { background: var(--paper) center / cover, #f1e6cf; }
 			.isle img { display: block; width: min(60%, 260px); margin: 0 auto 0.6rem; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.25)); }
-			.isle .head { display: flex; align-items: center; gap: 0.8em; } .isle .logo { width: 48px; height: 48px; object-fit: contain; border-radius: 10px; background: rgba(255,255,255,0.6); padding: 4px; } .isle .logo[hidden] { display: none; }
-			.isle .d { font-family: var(--mono); font-size: 0.82rem; opacity: 0.7; margin-top: 0.3em; }
+			.isle h2.mark { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+			.isle .d { font-size: 0.92rem; opacity: 0.85; margin-top: 0.45em; } .isle .d b { font-weight: 700; opacity: 1; } .isle .d b:not(:empty)::after { content: ' | '; font-weight: 400; opacity: 0.5; } .isle .d span { opacity: 0.75; }
 			.isle .role { margin-top: 0.8em; font-size: 0.98rem; }
 			.isle .works { list-style: none; padding: 0; }
 			.isle .works li { padding: 0.55em 0; border-top: 1px dashed rgba(42,33,24,0.25); }
@@ -186,7 +184,7 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				<button class="x" id="ix" aria-label="닫기">×</button>
 				<img id="ii" alt="" />
 				<div class="k">ISLAND <span id="in"></span> · 항해일지</div>
-				<div class="head"><img class="logo" id="ilogo" alt="" hidden /><div><h2 id="it"></h2><div class="d" id="idate"></div></div></div>
+				<h2 id="it"></h2><div class="d"><b id="ico"></b><span id="idate"></span></div>
 				<p class="role" id="ir"></p>
 				<div class="note" id="inote"></div>
 				<div class="k" id="iwk">여기서 한 일</div>
@@ -386,8 +384,9 @@ const captain = { reading: '', now: ['이 바다와 카드팩을 Claude Code와 
 				function openIsle(I) {
 					// 같은 섬에 두 번 머물렀으면 몇 번째 정박인지에 따라 그때 한 일만 보여준다
 					const visit = route.slice(0, stage + 1).filter((P) => P === I).length || 1, stay = I.stays && I.stays[Math.min(visit, I.stays.length) - 1];
-					$('ii').src = `/sea/island-${I.id}.webp`; const lg = $('ilogo'); lg.hidden = !I.logo; if (I.logo) lg.src = I.logo;
-					$('it').textContent = I.title; $('idate').textContent = stay ? stay.date : I.date; $('ir').textContent = stay ? stay.role : I.role;
+					$('ii').src = `/sea/island-${I.id}.webp`;
+					const h = $('it'); h.textContent = I.mark || I.title; h.classList.toggle('mark', !!I.mark); h.style.color = I.markColor || ''; $('ico').textContent = I.company || '';
+					$('idate').textContent = stay ? stay.date : I.date; $('ir').textContent = stay ? stay.role : I.role;
 					$('inote').textContent = I.note || ''; const lb = I.labels || {}; $('iwk').textContent = lb.works || '여기서 한 일'; $('isk').textContent = lb.stack || 'STACK'; $('ipk').textContent = lb.posts || '여기서 쓴 글';
 					$('in').textContent = I.id === 'S' ? '조선소' : `${route.filter((P, i, a) => a.indexOf(P) === i).indexOf(I) + 1}/${route.filter((P, i, a) => a.indexOf(P) === i).length}`;
 					const w = $('iw'); w.innerHTML = '';
