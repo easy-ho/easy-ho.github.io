@@ -15,6 +15,10 @@ const posts = (await getCollection('blog'))
 <html lang="ko">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			.sea { margin-top: 3rem; font-size: 0.9rem; }
+			.sea a { color: inherit; }
+		</style>
 	</head>
 	<body>
 		<Header />
@@ -30,6 +34,7 @@ const posts = (await getCollection('blog'))
 					</li>
 				))}
 			</ul>
+			<p class="muted sea">다녀온 회사는 섬이 됐고, 배는 아직 항해 중이다. <a href="/sea/">항해도 →</a></p>
 		</main>
 		<Footer />
 	</body>

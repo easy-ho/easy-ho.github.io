@@ -6,10 +6,6 @@ import { SITE_TITLE } from '../../consts';
 
 const labs = [
 	{ href: '/lab/cards/', name: 'cards', desc: '카드팩을 뜯으면 글이 홀로그램 카드로 나온다. 기울이면 포일이 흐른다. 뽑은 카드는 컬렉션에 쌓인다.' },
-	{ href: '/lab/sea/', name: 'sea', desc: '다녀온 회사는 섬이 됐고 배는 아직 항해 중이다. 지도, 지나온 항로, 등대, 나에 대한 유리병 편지, 다가가면 멀어지는 다음 섬.' },
-	{ href: '/lab/marble/', name: 'marble', desc: '마우스나 폰 기울기로 세계를 기울여 구슬을 굴린다. 구멍에 빠지면 글이 열린다.' },
-	{ href: '/lab/world/', name: 'world', desc: '걸어서 읽는 블로그. 1인칭 세계에서 글 하나가 비석 하나, 길을 따라 과거로 간다. 낮밤은 방문자 시각을 따른다.' },
-	{ href: '/lab/particles/', name: 'particles', desc: '입자 4만 개가 블로그 이름과 글 제목으로 모였다 흩어진다. 포인터로 밀어낼 수 있다.' },
 ];
 ---
 
@@ -28,7 +24,7 @@ const labs = [
 		<Header />
 		<main>
 			<h1>lab</h1>
-			<p class="muted">홈에 붙일 장치 후보들. 하나 고르면 그걸 홈으로 옮긴다.</p>
+			<p class="muted">아직 자리를 못 정한 장치. 항해는 <a href="/sea/">/sea/</a>로 옮겼다.</p>
 			<ul>{labs.map((l) => <li><a href={l.href}>{l.name}</a><span>{l.desc}</span></li>)}</ul>
 		</main>
 		<Footer />
