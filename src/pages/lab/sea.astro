@@ -45,7 +45,7 @@ const bottles = [...intro_bottles, ...logs];
 			html, body { height: 100%; overflow: hidden; background: #0b2a36; }
 			#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
 			.hud { position: fixed; inset: 0; pointer-events: none; color: #fff; text-shadow: 0 1px 2px rgba(0,20,30,0.6), 0 0 14px rgba(0,20,30,0.5); }
-			.hud .top { position: absolute; top: calc(1.2rem + env(safe-area-inset-top, 0px)); left: 1.25rem; right: 1.25rem; display: flex; justify-content: space-between; align-items: baseline; pointer-events: auto; }
+			.hud .top { position: absolute; top: calc(1.2rem + env(safe-area-inset-top, 0px)); left: 1.25rem; right: 1.25rem; display: flex; justify-content: space-between; align-items: baseline; } .hud .top a { pointer-events: auto; }
 			.hud .brand { font-weight: 700; text-decoration: none; font-size: 1.05rem; color: inherit; }
 			.hud .links { display: flex; gap: 1.2em; font-size: 0.95rem; } .hud .links a { text-decoration: none; color: inherit; opacity: 0.85; }
 			.intro { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; transition: opacity 0.5s; padding: 0 1.25rem; }
@@ -54,7 +54,7 @@ const bottles = [...intro_bottles, ...logs];
 			.intro .go { margin-top: 2em; font-family: var(--mono); font-size: 0.85rem; opacity: 0.9; animation: pulse 1.6s ease-in-out infinite; }
 			@keyframes pulse { 50% { opacity: 0.3; } }
 			.intro.off { opacity: 0; }
-			.near { position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%); width: min(92vw, 520px); text-align: center; opacity: 0; transition: opacity 0.3s; pointer-events: auto; }
+			.near { position: absolute; left: 50%; bottom: 16%; transform: translateX(-50%); width: min(92vw, 520px); text-align: center; opacity: 0; transition: opacity 0.3s; }
 			.near.on { opacity: 1; }
 			.near .k { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.2em; opacity: 0.85; }
 			.near .t { display: block; font-size: clamp(1.2rem, 3.4vw, 1.7rem); font-weight: 800; letter-spacing: -0.02em; text-decoration: none; color: inherit; margin-top: 0.2em; }
@@ -81,7 +81,7 @@ const bottles = [...intro_bottles, ...logs];
 			.cabin .x { position: absolute; right: 1rem; top: 0.8rem; background: none; border: 0; color: inherit; font-size: 1.4rem; cursor: pointer; }
 			.cabin .room { position: relative; }
 			.help { position: absolute; left: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; }
-			.stat { position: absolute; right: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; text-align: right; pointer-events: auto; }
+			.stat { position: absolute; right: 1.25rem; bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 0.78rem; opacity: 0.85; text-align: right; }
 			/* 지도 */
 			.map { position: absolute; right: 1.25rem; top: calc(4.2rem + env(safe-area-inset-top, 0px)); width: 150px; height: 150px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.35); box-shadow: 0 10px 30px rgba(0,0,0,0.4); pointer-events: auto; cursor: pointer; transition: width 0.3s, height 0.3s; background: #061a22; }
 			.map canvas { width: 100%; height: 100%; display: block; }
@@ -252,7 +252,7 @@ const bottles = [...intro_bottles, ...logs];
 				canvas.addEventListener('pointerdown', (e) => {
 					if (map.classList.contains('big')) { map.classList.remove('big'); mz.textContent = 'M · 크게'; return; }
 					const [bx, by] = toScreen(boat.x, boat.y);
-					if (Math.hypot(e.clientX - bx, e.clientY - by) < 44) { if (performance.now() - lastTap < 400) openCabin(); lastTap = performance.now(); return; }
+					if (Math.hypot(e.clientX - bx, e.clientY - by) < 28) { if (performance.now() - lastTap < 400) openCabin(); lastTap = performance.now(); return; }
 					const ux = (e.clientX / innerWidth * 2 - 1) * (innerWidth / innerHeight), uy = -(e.clientY / innerHeight * 2 - 1);
 					goTo(cam.x + ux * ZOOM * 0.5, cam.y + uy * ZOOM * 0.5);
 				});
@@ -322,16 +322,16 @@ const bottles = [...intro_bottles, ...logs];
 					if (sailing) {
 						const dx = tgt.x - boat.x, dy = tgt.y - boat.y, dist = Math.hypot(dx, dy);
 						const want = Math.atan2(dy, dx); let da = want - boat.h; da = Math.atan2(Math.sin(da), Math.cos(da));
-						boat.h += Math.max(-1.6 * dt, Math.min(1.6 * dt, da));
-						const target = dist < 1.2 ? 0 : Math.min(7, dist * 1.2) * (1 - Math.min(1, Math.abs(da) / 1.2) * 0.8);
-						boat.v += (target - boat.v) * Math.min(1, dt * 1.5);
+						boat.h += Math.max(-2.4 * dt, Math.min(2.4 * dt, da));
+						const target = dist < 1.2 ? 0 : Math.min(12, dist * 1.4) * (1 - Math.min(1, Math.abs(da) / 1.2) * 0.8);
+						boat.v += (target - boat.v) * Math.min(1, dt * 2.5);
 						if (dist < 1.2 && boat.v < 0.3) sailing = false;
 					} else boat.v *= 0.96;
 					let nx = boat.x + Math.cos(boat.h) * boat.v * dt, ny = boat.y + Math.sin(boat.h) * boat.v * dt;
 					for (const L of lands) { const d = Math.hypot(nx - L.x, ny - L.y); const rr = L.r * 1.25 + 0.9; if (d < rr) { nx = L.x + (nx - L.x) / d * rr; ny = L.y + (ny - L.y) / d * rr; boat.v *= 0.7; } } // 해안선 따라 미끄러진다. 항해는 끊지 않는다
 					const lim = WORLD / 2 - 6; nx = Math.max(-lim, Math.min(lim, nx)); ny = Math.max(-lim, Math.min(lim, ny));
 					boat.x = nx; boat.y = ny;
-					cam.x += (boat.x - cam.x) * Math.min(1, dt * 2); cam.y += (boat.y - cam.y) * Math.min(1, dt * 2);
+					cam.x += (boat.x - cam.x) * Math.min(1, dt * 3); cam.y += (boat.y - cam.y) * Math.min(1, dt * 3);
 					trailT += dt; if (trailT > 0.12 && boat.v > 0.5) { trailT = 0; trail.copyWithin(2, 0); trail[0] = boat.x - Math.cos(boat.h) * 1.2; trail[1] = boat.y - Math.sin(boat.h) * 1.2; reveal(boat.x, boat.y); }
 					// 가까운 땅
 					let best = null, bd = 1e9;
