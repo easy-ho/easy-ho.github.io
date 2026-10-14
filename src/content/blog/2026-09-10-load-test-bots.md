@@ -1,0 +1,58 @@
+---
+category: '실시간 서버'
+title: '봇 500마리 붙이다가 내 맥이 먼저 죽었다'
+description: '퀴즈 서버 부하 테스트용 봇을 직접 만들었다. 서버보다 먼저 터진 건 닉네임 사전, 파일 디스크립터, 백그라운드 탭, 그리고 내 노트북이었다.'
+pubDate: '2026-09-10'
+---
+
+![노트북 한 대에서 수백 개의 작은 슬라임 캐릭터가 줄지어 나와 멀리 있는 서버 건물로 행진하는 장면](/images/bot-march.jpg)
+<!-- IMAGE-PROMPT: Flat vector illustration: an open laptop on the left, and from its screen a long marching line of hundreds of tiny identical round slime characters heading toward a small server rack on the far right. The laptop looks slightly overheated with a few sweat drops. Playful but clean, soft pastel palette, white background, no text, 16:9. -->
+
+실시간 퀴즈 서버 오픈 전에 500명이 동시에 들어와서 12라운드를 끝까지 도는 걸 한 번은 봐야 했다. 일반 부하 도구로는 안 됐다. 문제를 받으면 존을 골라 이동하고, 틀리면 유령이 되고, 관전자는 따로 분류되는 **상태 있는 프로토콜**이라서. 요청 반복으로는 게임이 진행조차 안 된다.
+
+그래서 봇을 만들었다. 거창한 건 아니다. Node 내장 WebSocket으로 게임 프로토콜을 직접 말하는 스크립트 하나. 나중엔 팀원들도 버튼으로 투입할 수 있게 HTML 파일 하나로 옮겼다. 탭 하나가 WebSocket 수백 개를 연다.
+
+## 봇 한 마리가 하는 일
+
+1. `bot:형용사+동물+번호` 토큰으로 접속. 서버엔 테스트 전용 필터가 있어서 이 토큰이면 음수 userId를 주고 입장 검증만 건너뛴다.
+2. 문제가 오면 12%는 미선택(오답)으로 남고 나머지는 보기 하나를 무작위로 고른다.
+3. 서버 판정 규칙대로 존 안 좌표로 이동. 2지선다는 x ≤ 43 / x ≥ 57, 4지선다는 사분면.
+4. 정답 공개에서 자기 ID가 탈락 명단에 있으면 이동을 멈추고 유령이 된다.
+5. 25초마다 PING. 40%는 수다쟁이라 3~8초마다 채팅.
+
+측정은 봇 쪽에서 시도·유지·실패·종료 수, close 코드, 라운드별 QUESTION/REVEAL 수신 수. 서버 쪽은 Grafana, redis-cli, `/proc/net/tcp`.
+
+## 서버보다 먼저 터진 것들
+
+**봇이 로컬 서버를 때리고 있었다.** 봇 500개가 붙었는데 운영 조건 파드 CPU가 0.1. "beta에 직접 쏜 거잖아"라고 우겼는데 봇 로그 첫 줄이 `host=localhost`였다. Redis만 공유되고 팬아웃은 내 맥의 JVM이 하고 있었다. 로컬 서버 끄고 접속 대상을 바꿨다.
+
+**닉네임이 겹쳤다.** 435마리 중 232마리만 참가자로 등록. 닉네임 조합이 만 개뿐이고 중복 방지 Set이 프로세스마다 따로라서 겹쳤는데, 같은 닉네임은 같은 userId가 되니 "1계정 1참여" 규칙이 봇끼리 서로를 KICK하고 있었다. 실행마다 랜덤 접두어를 붙였다.
+
+**브라우저 봇은 250개에서 막혔다.** macOS GUI 앱의 기본 파일 디스크립터 한도가 256이다. 소켓 하나가 FD 하나. `ulimit -n`을 올리거나 Node로 돌리면 된다.
+
+**시작하니 생존자가 500이 아니라 301이었다.** 봇 탭을 백그라운드에 뒀더니 Chrome이 타이머를 줄여서 PING이 멈췄고, 접속 키 TTL 40초가 만료되면서 서버의 좀비 정리 로직이 199명을 치웠다. 이건 결국 서버 정책을 바꾸는 걸로 끝났다. 대기실에 들어온 사람은 끊겨도 자리를 안 뺏는다. 어차피 시작 후 못 맞히면 유령이 되니까.
+
+**봇이 너무 부지런했다.** 화면 애니메이션까지 흉내 내느라 중간 좌표를 초당 10건씩 보내고 있었다. 판정엔 목표 좌표 한 건이면 충분하다. 3초에 1건으로 줄이고 봇마다 전송 시점을 흩뿌렸더니 30마리 기준 초당 282건이 13건이 됐다. 부하 테스트가 부하를 과장하고 있었던 셈.
+
+![숫자 450 근처에서 막힌 게이지와, 옆에 두 번째 노트북이 합류하면서 게이지가 500을 넘기는 장면](/images/wall-at-450.jpg)
+<!-- IMAGE-PROMPT: Flat vector illustration: a horizontal progress gauge stuck just short of a marked line, one laptop below it looking exhausted; to the right a second laptop joins and the gauge pushes past the line with a small burst of confetti. Minimal, soft blue and yellow palette, white background, no readable numbers or text, 16:9. -->
+
+## 450의 벽
+
+가장 오래 헤맨 건 이거다. 봇이 450~490에서 더 안 붙었다. 파드 1대, 2대, 3대. ALB IP 분산. 프로세스 쪼개기. FD, ephemeral port, TIME_WAIT. 한때 "Netty 이벤트 루프 4개 포화"라는 그럴듯한 진단까지 나왔는데 파드를 3대로 늘려도 똑같이 막혀서 기각.
+
+"야 봇 하나 제대로 못 붙이냐"까지 갔다가, 옆자리 동료가 자기 PC에서 같이 띄우니까 바로 500을 넘었다. **내 맥의 네트워크 한계**였다. 서버 문제가 아니었다. 오진에서 정정까지 반나절. 교훈은 단순하다. 클라이언트 머신 하나로 측정한 상한은 서버 상한이 아니다.
+
+## 그래도 봇이 찾아낸 것
+
+- JVM 힙이 컨테이너 limit보다 컸다. `-Xmx4g`에 limit 2Gi. 대기만 시켜도 OOMKilled. `MaxRAMPercentage`로 고쳤다.
+- 이동 브로드캐스트가 전 세션에 가고 있었다. 이건 [따로 글](/blog/2026-09-05-fanout-group-channels/)로 썼다.
+- 관전자가 전원 좌표를 받아서 브라우저 탭이 메모리 부족으로 죽었다.
+- 서버 이동 rate limit이 초당 5건인데 프론트는 초당 10건을 보내서 절반이 버려지고 캐릭터가 끊겨 보였다.
+- 200명이 동시에 입장하면 끝까지 10초. 입장마다 전체 접속자를 스캔하는 정리 로직이 O(N²)을 만들고 있었다. 결국 그 로직을 통째로 뺐다.
+
+파드 한 대로 500명 12라운드 완주, 비정상 종료 0. 그 숫자를 보고 나서야 오픈 날짜를 믿을 수 있었다.
+
+## 치우기
+
+봇 인증 필터와 검증 우회는 운영 배포 전에 반드시 빼야 하는 코드였다. 한때 프로필 조건 없이 전 환경에서 켜져 있었기 때문에, 까먹으면 그대로 구멍이다. 봇 보상 지급 제외 커밋까지 포함해서 배포 전에 전부 걷어냈다. 부하 테스트 코드의 수명은 테스트 끝나는 날까지다.

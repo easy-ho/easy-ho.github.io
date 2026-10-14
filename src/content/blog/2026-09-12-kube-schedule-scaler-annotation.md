@@ -5,7 +5,8 @@ description: 'Rancher에서 본 schedule-actions 어노테이션의 정체는 ku
 pubDate: '2026-09-12'
 ---
 
-![시계의 세 시각에서 파드 스택 7개, 10개, 2개로 이어지는 개념도](/images/schedule-scaler-hero.svg)
+![시계와 파드 개수가 연결된 스케줄 스케일링 개념](/images/schedule-scaler-hero.jpg)
+<!-- IMAGE-PROMPT: Flat vector illustration of an analog clock on the left, with three arrows at different hour marks pointing right toward stacks of small hexagonal pods that grow in height from 2 to 7 to 10 and then shrink back. Soft blue and gray palette, white background, no readable text, 16:9. -->
 
 라이브 이벤트 전에 운영 Deployment를 Rancher에서 보다가 처음 보는 어노테이션을 발견했다. Rancher 기능인지, 누가 손으로 넣은 건지 모르겠어서 출처부터 찾아봤다.
 
@@ -31,7 +32,8 @@ Rancher 기능이 아니라 클러스터에 깔린 **kube-schedule-scaler**(zala
 
 12:30 이후엔 HPA 축소 안정화 시간(기본 5분) 지나고 CPU 내려가는 만큼 줄어서 결국 2개로.
 
-![시간축에 따라 HPA min/max 밴드가 계단식으로 올라갔다 내려오고, 실제 파드 수가 그 안에서 따라가는 그래프](/images/hpa-range-steps.svg)
+![시간축에 따라 HPA min/max 범위가 계단식으로 바뀌는 그래프](/images/hpa-range-steps.jpg)
+<!-- IMAGE-PROMPT: Minimal line chart illustration: x-axis is time, a shaded band shows a min/max range that steps up twice in the evening and then drops back, with a thin line inside the band representing actual pod count following the lower bound. Flat design, blue band, white background, no readable axis labels. -->
 
 ## 확인해야 할 함정 네 개
 
