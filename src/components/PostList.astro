@@ -1,0 +1,16 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import FormattedDate from './FormattedDate.astro';
+import { categorySlug } from '../consts';
+interface Props { posts: CollectionEntry<'blog'>[]; showCategory?: boolean }
+const { posts, showCategory = true } = Astro.props;
+---
+<ul class="post-list">
+	{posts.map((post) => (
+		<li>
+			<FormattedDate date={post.data.pubDate} />
+			<a href={`/blog/${post.id}/`}>{post.data.title}</a>
+			{showCategory && <a class="cat" href={`/category/${categorySlug(post.data.category)}/`}>{post.data.category}</a>}
+		</li>
+	))}
+</ul>

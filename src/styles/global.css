@@ -92,7 +92,13 @@ th { font-weight: 650; color: var(--muted); font-size: 0.9em; }
 .post-list time { flex: 0 0 6.2em; color: var(--muted); font-size: 0.88em; font-variant-numeric: tabular-nums; }
 .post-list a { text-decoration: none; }
 .post-list a:hover { text-decoration: underline; }
+.post-list .cat { margin-left: auto; flex: 0 0 auto; color: var(--muted); font-size: 0.8em; }
+.cats { display: flex; flex-wrap: wrap; gap: 0.4em 1.1em; margin: 1.6rem 0 1.4rem; font-size: 0.88em; }
+.cats a { color: var(--muted); text-decoration: none; }
+.cats a span { opacity: 0.6; font-variant-numeric: tabular-nums; margin-left: 0.15em; }
+.cats a:hover, .cats a.active { color: var(--text); }
 @media (max-width: 480px) {
 	.post-list li { flex-direction: column; gap: 0.1em; }
+	.post-list .cat { margin-left: 0; }
 }
 
