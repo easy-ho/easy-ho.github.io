@@ -37,7 +37,7 @@ const islands = [
 			{ when: '2025', name: '추천 파이프라인', desc: 'LightFM 하이브리드 추천. 수집(Airflow) · 학습(EC2) · 서빙(K8s) 3계층, 무중단 모델 교체, 캐시 → 모델 → 폴백.' },
 			{ when: '', name: '그 외', desc: '내서재 리뉴얼, 사전구매 구매 로직, 배치 Airflow 이관, 데이터 카탈로그 구축, 재화 지급 API, 저장소 규칙을 AI가 읽는 형태로 코드화해 팀 공용 스킬로 배포.' },
 		], stack: ['Kotlin', 'WebFlux', 'R2DBC', 'Redis', 'Kafka', 'SQS', 'Kubernetes', 'Airflow', 'Python', 'FastAPI'],
-		posts: ['2026-10-24-publish-after-commit', '2026-10-23-roulette-three-clocks', '2026-10-21-round-trips-not-queries', '2026-10-16-livechat-zombie-sessions', '2026-09-05-fanout-group-channels', '2026-09-10-load-test-bots', '2026-09-22-view-history-sqs', '2026-09-12-kube-schedule-scaler-annotation', '2026-09-04-parallel-subagent-codebase-review', '2026-09-09-gitlab-mr-skill'] },
+		posts: ['2026-11-02-ai-team-with-approval-gate', '2026-11-01-retry-is-not-a-queue', '2026-10-31-measure-before-sizing', '2026-10-30-decommission-audit-log', '2026-10-29-dag-side-by-side', '2026-10-28-dormant-env-var', '2026-10-27-replica-lag-79-minutes', '2026-10-24-publish-after-commit', '2026-10-23-roulette-three-clocks', '2026-10-21-round-trips-not-queries', '2026-10-16-livechat-zombie-sessions', '2026-09-05-fanout-group-channels', '2026-09-10-load-test-bots', '2026-09-22-view-history-sqs', '2026-09-12-kube-schedule-scaler-annotation', '2026-09-04-parallel-subagent-codebase-review', '2026-09-09-gitlab-mr-skill'] },
 	// 조선소: 항로에 없는 섬. 이 배와 바다를 지은 곳. 회사가 아니라 이 블로그의 제작 기록이다.
 	{ id: 'S', x: -6, y: 36, r: 3.2, seed: 11, title: '조선소', date: '2026.10.12 –', role: '이 배와 바다를 지은 곳. 혼자 지은 건 아니다. Claude Code가 설계와 코드를, Codex가 그림을 맡았다. 나는 방향을 정하고, 마음에 안 들면 다시 시켰다.',
 		labels: { works: '건조 기록', stack: '자재', posts: '건조 일지' },
