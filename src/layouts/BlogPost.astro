@@ -28,7 +28,7 @@ const { title, description, pubDate, updatedDate, category } = Astro.props;
 				<p class="meta">
 					<FormattedDate date={pubDate} />
 					{updatedDate && <span class="upd">(수정 <FormattedDate date={updatedDate} />)</span>}
-					<a class="upd" href={`/category/${categorySlug(category)}/`}>{category}</a>
+					{category && <a class="upd" href={`/category/${categorySlug(category)}/`}>{category}</a>}
 				</p>
 				<slot />
 			</article>

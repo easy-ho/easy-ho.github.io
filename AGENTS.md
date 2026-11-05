@@ -23,7 +23,7 @@ Consult these guides before working on related tasks:
 
 ## 이 블로그의 규칙
 
-- 블로그 이름/소개는 `src/consts.ts` 한 곳에서만 바꾼다. GitHub 링크는 두지 않는다.
+- 블로그 이름(현재 "항적노트")·소개·연락 메일(CONTACT_EMAIL)은 `src/consts.ts` 한 곳에서만 바꾼다. GitHub 링크는 두지 않는다.
 - 포스트는 `src/content/blog/YYYY-MM-DD-slug.md`. frontmatter는 `title`, `description`, `pubDate` 필수.
 - 이미지 자리는 아래 블록으로 비워둔다. 이미지가 생기면 원본을 `sips -Z 1320` JPEG(품질 85)로 줄여 `public/images/`에 넣고, placeholder 블록(프롬프트 포함)을 통째로 `![설명](/images/파일명.jpg)`으로 바꾼다.
   ```html

@@ -1,13 +1,16 @@
 ---
+import { CONTACT_EMAIL } from '../consts';
 const year = new Date().getFullYear();
 ---
 <footer>
 	<span>© {year} easyho</span>
 	<span>·</span>
+	<a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+	<span>·</span>
 	<a href="/rss.xml">RSS</a>
 </footer>
 <style>
-	footer { max-width: 660px; margin: 0 auto; padding: 0 1.25rem 3rem; color: var(--muted); font-size: 0.85rem; display: flex; gap: 0.6em; }
+	footer { max-width: 660px; margin: 0 auto; padding: 0 1.25rem 3rem; color: var(--muted); font-size: 0.85rem; display: flex; flex-wrap: wrap; gap: 0.6em; }
 	footer a { color: var(--muted); text-decoration: none; }
 	footer a:hover { color: var(--text); }
 </style>
